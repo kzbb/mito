@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>MITO - A compass rose for the weary TV historian.</title>
+</head>
+<body>
+    <div class="app-layout">
+        <header class="topbar">
+            <h1 class="app-title">MITO</h1>
+            <button id="new-file">新規作成</button>
+            <button id="open-file">開く</button>
+            <button id="save-file">保存</button>
+            <input id="json-file-input" type="file" accept="application/json,.json" hidden>
+            <span id="topbar-save-status" class="topbar-save-status" aria-live="polite">未保存</span>
+        </header>
+
+        <section class="columns" aria-label="Two column layout">
+            <aside class="left-window" aria-label="Left panel">
+                <section class="left-pane top-pane" aria-label="Outline panel">
+                    <div class="outline-header">
+                        <div class="outline-scope" id="outline-scope">未選択</div>
+                        <button id="outline-settings" type="button" hidden>設定</button>
+                    </div>
+                    <nav class="explorer-tree" id="explorer-tree" aria-label="Project explorer">
+                        <div class="tree-item"><span class="tree-leaf">「新規作成」または「開く」で開始してください</span></div>
+                    </nav>
+                </section>
+
+                <div class="left-pane-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize left panel sections"></div>
+
+                <section class="left-pane bottom-pane" aria-label="Data entry panel">
+                    <div class="pane-title">データ入力</div>
+                    <form id="entry-form" class="entry-form">
+                        <label class="form-field">
+                            <span>カテゴリ</span>
+                            <input type="text" name="category" list="category-options" placeholder="カテゴリ" required>
+                            <datalist id="category-options"></datalist>
+                        </label>
+
+                        <label class="form-field">
+                            <span>名称</span>
+                            <input type="text" name="name" placeholder="項目名" required>
+                        </label>
+
+                        <div class="form-grid-2">
+                            <label class="form-field">
+                                <span>from</span>
+                                <input type="text" name="from" placeholder="YYYY-MM-DD">
+                            </label>
+                            <label class="form-field">
+                                <span>to</span>
+                                <input type="text" name="to" placeholder="YYYY-MM-DD">
+                            </label>
+                        </div>
+
+                        <label class="form-field">
+                            <span>説明</span>
+                            <textarea name="description" rows="4" placeholder="説明を入力"></textarea>
+                        </label>
+
+                        <div class="form-actions">
+                            <button type="submit" id="preview-entry">追加</button>
+                            <button type="reset">クリア</button>
+                        </div>
+                        <p id="entry-form-status" class="form-status">「新規作成」または「開く」でデータを準備してください。</p>
+                    </form>
+                </section>
+            </aside>
+
+            <div class="splitter splitter-left" role="separator" aria-orientation="vertical" aria-label="Resize left panel"></div>
+
+            <main class="main-window" aria-label="Main content">
+                <h2>Main Content</h2>
+                <p>上部の「新規作成」または「開く」から開始してください。</p>
+            </main>
+        </section>
+
+        <footer class="footer">
+            <small>MITO - A compass rose for the weary TV historian.</small>
+        </footer>
+    </div>
+
+        <script src="app-layout.js"></script>
+        <script src="app-file-actions.js"></script>
+        <script src="entry-detail-renderer.js"></script>
+        <script src="settings-renderer.js"></script>
+        <script src="dashboard-renderer.js"></script>
+        <script src="renderers.js"></script>
+        <script src="tree-renderer.js"></script>
+        <script src="entry-form.js"></script>
+        <script src="data-model.js"></script>
+        <script src="persistence.js"></script>
+        <script src="app-document-actions.js"></script>
+        <script src="app-outline-view.js"></script>
+        <script src="app-bridge.js"></script>
+        <script src="app.js"></script>
+</body>
+</html>
