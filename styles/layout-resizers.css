@@ -1,0 +1,44 @@
+.left-pane-splitter {
+	position: relative;
+	cursor: row-resize;
+	user-select: none;
+	background: #d5cab9;
+	margin: 0 -12px;
+}
+
+.left-pane-splitter::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 2px;
+	bottom: 2px;
+	background: #baa990;
+}
+
+.left-pane-splitter:hover::after,
+.left-pane-splitter.is-dragging::after {
+	background: var(--accent);
+}
+
+.splitter {
+	background: #d5cab9;
+	cursor: col-resize;
+	user-select: none;
+	position: relative;
+}
+
+.splitter::after {
+	content: "";
+	position: absolute;
+	left: 1px;
+	right: 1px;
+	top: 0;
+	bottom: 0;
+	background: #baa990;
+}
+
+.splitter:hover::after,
+.splitter.is-dragging::after {
+	background: var(--accent);
+}

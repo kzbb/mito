@@ -1,0 +1,14 @@
+:root {
+	--bg: #e9e2d5;
+	--panel: #f7f3eb;
+	--panel-2: #efe7da;
+	--line: #c5b8a2;
+	--text: #2f2a22;
+	--muted: #6f6456;
+	--accent: #2f5f88;
+	--accent-2: #244a69;
+	--left-width: 320px;
+	--left-top-height: 320px;
+	--left-pane-splitter-height: 6px;
+	--splitter-width: 4px;
+}

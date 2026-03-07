@@ -1,0 +1,54 @@
+.app-layout {
+	min-width: 1120px;
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: 40px 1fr 28px;
+	grid-template-areas:
+		"topbar"
+		"columns"
+		"footer";
+}
+
+.topbar,
+.footer {
+	background: var(--panel);
+	padding: 0 12px;
+}
+
+.topbar {
+	grid-area: topbar;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	border-bottom: 1px solid var(--line);
+}
+
+.columns {
+	grid-area: columns;
+	min-height: 0;
+	display: grid;
+	grid-template-columns: var(--left-width) var(--splitter-width) minmax(0, 1fr);
+	background: var(--bg);
+}
+
+.app-title {
+	margin: 0;
+	font-size: 0.95rem;
+	letter-spacing: 0.02em;
+}
+
+.app-status {
+	margin: 0;
+	color: var(--accent);
+	font-size: 0.8rem;
+	font-weight: 600;
+}
+
+.footer {
+	grid-area: footer;
+	color: var(--muted);
+	display: flex;
+	align-items: center;
+	border-top: 1px solid var(--line);
+}

@@ -1,0 +1,61 @@
+#new-file,
+#open-file,
+#save-file,
+#outline-settings,
+.form-actions button {
+	border: 1px solid #97886f;
+	border-radius: 4px;
+	background: #e9e0d0;
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+#new-file,
+#open-file,
+#save-file {
+	padding: 4px 10px;
+	font-size: 0.8rem;
+	line-height: 1.3;
+}
+
+#new-file:hover,
+#open-file:hover,
+#save-file:hover,
+#outline-settings:hover,
+.form-actions button:hover {
+	background: #ded2bc;
+	border-color: #85775f;
+}
+
+#new-file:active,
+#open-file:active,
+#save-file:active,
+#outline-settings:active,
+.form-actions button:active {
+	background: #d2c4ab;
+}
+
+.topbar-save-status {
+	margin-left: auto;
+	font-size: 0.78rem;
+	color: var(--muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 42vw;
+	padding: 2px 8px;
+	border: 1px solid var(--line);
+	border-radius: 4px;
+	background: var(--panel-2);
+}
+
+#outline-settings {
+	padding: 3px 8px;
+	font-size: 0.76rem;
+}
+
+#outline-settings:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}

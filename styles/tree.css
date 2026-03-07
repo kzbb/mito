@@ -1,0 +1,92 @@
+.tree-group {
+	margin: 0;
+}
+
+.tree-group summary {
+	list-style: none;
+	cursor: pointer;
+	padding: 2px 0 2px 14px;
+	position: relative;
+	user-select: none;
+	border-radius: 4px;
+}
+
+.tree-group summary::-webkit-details-marker {
+	display: none;
+}
+
+.tree-group summary::before {
+	content: "▸";
+	position: absolute;
+	left: 0;
+	top: 2px;
+	font-size: 0.72rem;
+	color: var(--muted);
+	transition: transform 120ms ease;
+}
+
+.tree-group[open] summary::before {
+	transform: rotate(90deg);
+}
+
+.tree-group > ul {
+	padding-left: 14px;
+	margin: 0 0 4px;
+	border-left: 1px solid #d4c6af;
+}
+
+.tree-group li,
+.tree-item {
+	list-style: none;
+	margin: 0;
+}
+
+.tree-label,
+.tree-leaf {
+	display: block;
+	padding: 2px 6px;
+	border-radius: 4px;
+}
+
+.tree-label {
+	font-weight: 500;
+}
+
+.tree-leaf {
+	margin-left: 2px;
+	position: relative;
+	padding-left: 14px;
+}
+
+.tree-leaf-button {
+	width: 100%;
+	margin-left: 0;
+	border: 0;
+	background: transparent;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+	appearance: none;
+}
+
+.tree-leaf-button.is-selected {
+	background: #cbd9e8;
+	color: #1f3750;
+}
+
+.tree-leaf::before {
+	content: "";
+	position: absolute;
+	left: 4px;
+	top: 50%;
+	width: 5px;
+	height: 1px;
+	background: #a18f78;
+	transform: translateY(-50%);
+}
+
+.tree-group summary:hover .tree-label,
+.tree-leaf:hover {
+	background: #ebe1d2;
+}
