@@ -280,6 +280,9 @@ function initializeEntryFormModule() {
 			editingEntryId = entryId;
 		},
 		resolveDashboardLabel: (/** @type {any} */ data) => bridgeApi?.resolveDashboardLabel?.(data) ?? "ダッシュボード",
+		setFormStatus: (/** @type {string} */ message) => {
+			setFormStatus(message);
+		},
 		findActiveEntryIndexById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => bridgeApi?.findActiveEntryIndexById?.(data, entryId) ?? -1,
 		getNextActiveId: (/** @type {any} */ data) => bridgeApi?.getNextActiveId?.(data) ?? 1,
 		renderOutlineFromData: (/** @type {any} */ data) => {

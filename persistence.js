@@ -15,7 +15,7 @@
 		 * @param {string} message
 		 */
 		function setFormStatus(message) {
-			const statusElement = document.getElementById("entry-form-status");
+			const statusElement = document.getElementById("footer-status") || document.getElementById("entry-form-status");
 			if (!statusElement) {
 				return;
 			}

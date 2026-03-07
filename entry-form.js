@@ -7,6 +7,7 @@
 	 *   getEditingEntryId: () => string | null,
 	 *   setEditingEntryId: (entryId: string | null) => void,
 	 *   resolveDashboardLabel: (data: any) => string,
+	 *   setFormStatus: (message: string) => void,
 	 *   findActiveEntryIndexById: (data: any, entryId: string | null) => number,
 	 *   getNextActiveId: (data: any) => number,
 	 *   renderOutlineFromData: (data: any) => void,
@@ -21,10 +22,9 @@
 		 */
 		function setupEntryForm() {
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
-			const statusElement = /** @type {HTMLElement | null} */ (document.getElementById("entry-form-status"));
 			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
 
-			if (!formElement || !statusElement || !mainElement) {
+			if (!formElement || !mainElement) {
 				return;
 			}
 
@@ -56,13 +56,13 @@
 				const name = readTrimmedFormValue(formData, "name");
 
 				if (!category || !name) {
-					statusElement.textContent = "カテゴリと名称は必須です。";
+					deps.setFormStatus("カテゴリと名称は必須です。");
 					return;
 				}
 
 				const currentData = deps.getCurrentData();
 				if (!currentData) {
-					statusElement.textContent = "先に「開く」でJSONを読み込んでください。";
+					deps.setFormStatus("先に「開く」でJSONを読み込んでください。");
 					return;
 				}
 
@@ -106,22 +106,22 @@
 				deps.renderOutlineFromData(currentData);
 				if (wasDashboardView) {
 					deps.renderDashboardOverview(mainElement, currentData);
-					statusElement.textContent = isUpdateMode
+					deps.setFormStatus(isUpdateMode
 						? "選択したエントリを更新し、年表表示を維持しました。"
-						: "active に新しいエントリを追加し、年表表示を維持しました。";
+						: "新しいエントリを追加し、年表表示を維持しました。");
 					return;
 				}
 
 				deps.focusNewEntryInTree(targetEntry);
 				deps.renderEntryDetail(mainElement, targetEntry);
-				statusElement.textContent = isUpdateMode
+				deps.setFormStatus(isUpdateMode
 					? "選択したエントリを更新し、該当カテゴリへ反映しました。"
-					: "active に新しいエントリを追加し、該当カテゴリへ反映しました。";
+					: "新しいエントリを追加し、該当カテゴリへ反映しました。");
 			});
 
 			formElement.addEventListener("reset", () => {
 				setFormModeAdd();
-				statusElement.textContent = "入力フォームをクリアしました。";
+				deps.setFormStatus("入力フォームをクリアしました。");
 			});
 		}
 
@@ -160,10 +160,9 @@
 		 */
 		function enterEditMode(entry) {
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
-			const statusElement = /** @type {HTMLElement | null} */ (document.getElementById("entry-form-status"));
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
 
-			if (!formElement || !statusElement || !submitButton) {
+			if (!formElement || !submitButton) {
 				return;
 			}
 
@@ -185,7 +184,7 @@
 			descriptionInput.value = typeof entry?.description === "string" ? entry.description : "";
 
 			submitButton.textContent = "更新";
-			statusElement.textContent = "編集中: 内容を修正して「更新」を押すと反映されます。";
+			deps.setFormStatus("編集中: 内容を修正して「更新」を押すと反映されます。");
 		}
 
 		/**
