@@ -141,7 +141,7 @@
 			scopeElement.textContent = "未選択";
 			hideSettingsButton();
 			deps.setTreeMessage(treeElement, "「新規作成」または「開く」で開始してください");
-			deps.renderMainMessage(mainElement, "上部の「新規作成」または「開く」ボタンから開始してください。");
+			deps.renderMainMessage(mainElement, "");
 			populateCategoryOptions({ active: [], archived: [] });
 			deps.setFormModeAdd();
 		}
