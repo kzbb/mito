@@ -194,12 +194,12 @@ function initializeDocumentActionsModule() {
  * Initialize rendering helpers from external module.
  */
 function initializeRenderers() {
-	const createRenderers = /** @type {any} */ (window).createRenderers;
-	if (typeof createRenderers !== "function") {
+	const createRendererComposer = /** @type {any} */ (window).createRendererComposer;
+	if (typeof createRendererComposer !== "function") {
 		return;
 	}
 
-	rendererApi = createRenderers({
+	rendererApi = createRendererComposer({
 		getCurrentData: () => currentData,
 		onEnterEditMode: (/** @type {any} */ entry) => {
 			bridgeApi?.enterEditMode?.(entry);

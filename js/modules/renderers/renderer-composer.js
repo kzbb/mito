@@ -1,6 +1,6 @@
 // @ts-check
 
-(function registerRenderers(globalObject) {
+(function registerRendererComposer(globalObject) {
 	/**
 	 * Create renderer helpers with app-level callbacks.
 	 * @param {{
@@ -12,7 +12,7 @@
 	 *   onProjectNameInput: (nextProject: string) => void
 	 * }} deps
 	 */
-	function createRenderers(deps) {
+	function createRendererComposer(deps) {
 		/**
 		 * @param {any} entry
 		 * @returns {string}
@@ -171,5 +171,5 @@
 		};
 	}
 
-	/** @type {any} */ (globalObject).createRenderers = createRenderers;
+	/** @type {any} */ (globalObject).createRendererComposer = createRendererComposer;
 })(window);
