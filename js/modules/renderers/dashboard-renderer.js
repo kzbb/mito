@@ -15,6 +15,7 @@
 		 */
 		function renderDashboardOverview(mainElement, data) {
 			mainElement.classList.remove("settings-view");
+			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";
 
 			const title = document.createElement("h2");

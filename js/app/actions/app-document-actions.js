@@ -58,8 +58,8 @@
 				generatedAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 				version: 1,
+				calendar: null,
 				settings: {
-					language: "ja",
 					focusCategory: "出来事",
 					dashboardLabel: "年表",
 				},
@@ -86,6 +86,16 @@
 				return;
 			}
 
+			if (
+				(!data.calendar || typeof data.calendar !== "object")
+				&& data.settings
+				&& typeof data.settings === "object"
+				&& data.settings.calendar
+				&& typeof data.settings.calendar === "object"
+			) {
+				data.calendar = data.settings.calendar;
+			}
+
 			if (!data.settings || typeof data.settings !== "object") {
 				return;
 			}
@@ -101,6 +111,8 @@
 
 			delete settings.masterCategory;
 			delete settings.masterCategoryDashboard;
+			delete settings.language;
+			delete settings.calendar;
 		}
 
 		return {

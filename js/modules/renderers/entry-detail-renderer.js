@@ -16,6 +16,7 @@
 		 */
 		function renderEntryDetail(mainElement, entry) {
 			mainElement.classList.remove("settings-view");
+			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";
 
 			const article = document.createElement("article");

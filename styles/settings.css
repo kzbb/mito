@@ -42,9 +42,9 @@
 	display: grid;
 	gap: 5px;
 	padding: 8px;
-	border: 1px solid #d2c4ae;
+	/* border: 1px solid #d2c4ae; */
 	border-radius: 8px;
-	background: #f8f3ea;
+	/* background: #f8f3ea; */
 }
 
 .settings-field-name {
@@ -71,6 +71,38 @@
 	outline: 2px solid var(--accent);
 	outline-offset: 1px;
 	border-color: var(--accent);
+}
+
+.settings-file-input {
+	padding: 4px;
+	background: #fffdf8;
+}
+
+.settings-calendar-button {
+	justify-self: start;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	padding: 6px 10px;
+	font: inherit;
+	font-size: 0.82rem;
+	background: #fffdf8;
+	color: var(--text);
+	cursor: pointer;
+}
+
+.settings-calendar-button:hover {
+	background: #f8f0e4;
+}
+
+.settings-calendar-button:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+.settings-field-subtext {
+	margin: 0;
+	font-size: 0.74rem;
+	color: var(--muted);
 }
 
 .settings-archived-list {

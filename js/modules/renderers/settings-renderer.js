@@ -7,6 +7,7 @@
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   onProjectNameInput: (nextProject: string) => void,
+	 *   onOpenCalendarEditor: () => void,
 	 *   resolveEntryName: (entry: any) => string,
 	 *   resolveDashboardLabel: (data: any) => string
 	 * }} deps
@@ -19,9 +20,10 @@
 		 */
 		function renderSettingsButton(data, onSelect) {
 			const settings = data?.settings && typeof data.settings === "object" ? data.settings : null;
+			const calendar = data?.calendar && typeof data.calendar === "object" ? data.calendar : null;
 			const archivedEntries = Array.isArray(data?.archived) ? data.archived : [];
 
-			if (!settings && archivedEntries.length === 0) {
+			if (!settings && !calendar && archivedEntries.length === 0) {
 				setSettingsButtonState(null, null);
 				return null;
 			}
@@ -68,6 +70,7 @@
 		function renderSettingsOverview(mainElement, data) {
 			mainElement.innerHTML = "";
 			mainElement.classList.add("settings-view");
+			mainElement.classList.remove("calendar-editor-view");
 
 			const title = document.createElement("h2");
 			title.className = "settings-page-title";
@@ -77,6 +80,27 @@
 			const settings = data?.settings && typeof data.settings === "object" ? data.settings : {};
 			const archivedEntries = Array.isArray(data?.archived) ? data.archived : [];
 			const projectName = typeof data?.project === "string" ? data.project : "";
+
+			const calendarSection = document.createElement("section");
+			calendarSection.className = "settings-section";
+			const calendarTitle = document.createElement("h3");
+			calendarTitle.className = "settings-section-title";
+			calendarTitle.textContent = "カレンダー";
+			calendarSection.appendChild(calendarTitle);
+
+			const calendarField = document.createElement("div");
+			calendarField.className = "settings-field";
+			const calendarButton = document.createElement("button");
+			calendarButton.type = "button";
+			calendarButton.className = "settings-calendar-button";
+			calendarButton.textContent = "カレンダーの編集";
+			calendarButton.addEventListener("click", () => {
+				deps.onOpenCalendarEditor();
+			});
+
+			calendarField.appendChild(calendarButton);
+			calendarSection.appendChild(calendarField);
+			mainElement.appendChild(calendarSection);
 
 			const settingsSection = document.createElement("section");
 			settingsSection.className = "settings-section";
@@ -114,6 +138,10 @@
 			settingsFields.appendChild(projectField);
 
 			for (const [key, value] of Object.entries(settings)) {
+				if (key === "language") {
+					continue;
+				}
+
 				const field = document.createElement("div");
 				field.className = "settings-field";
 

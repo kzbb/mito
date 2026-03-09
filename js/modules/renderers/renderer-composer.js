@@ -9,7 +9,8 @@
 	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, string>) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
-	 *   onProjectNameInput: (nextProject: string) => void
+	 *   onProjectNameInput: (nextProject: string) => void,
+	 *   onOpenCalendarEditor: () => void
 	 * }} deps
 	 */
 	function createRendererComposer(deps) {
@@ -47,6 +48,7 @@
 		 */
 		function renderMainMessage(mainElement, message) {
 			mainElement.classList.remove("settings-view");
+			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";
 			const title = document.createElement("h2");
 			title.textContent = "Main Content";
@@ -59,6 +61,7 @@
 		const createEntryDetailRenderer = /** @type {any} */ (globalObject).createEntryDetailRenderer;
 		const createSettingsRenderer = /** @type {any} */ (globalObject).createSettingsRenderer;
 		const createDashboardRenderer = /** @type {any} */ (globalObject).createDashboardRenderer;
+		const createCalendarRenderer = /** @type {any} */ (globalObject).createCalendarRenderer;
 
 		const entryDetailApi = typeof createEntryDetailRenderer === "function"
 			? createEntryDetailRenderer({
@@ -75,6 +78,7 @@
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 				onProjectNameInput: deps.onProjectNameInput,
+				onOpenCalendarEditor: deps.onOpenCalendarEditor,
 				resolveEntryName,
 				resolveDashboardLabel,
 			})
@@ -85,6 +89,13 @@
 				onEnterEditMode: deps.onEnterEditMode,
 				resolveEntryName,
 				resolveDashboardLabel,
+			})
+			: null;
+
+		const calendarApi = typeof createCalendarRenderer === "function"
+			? createCalendarRenderer({
+				onSetFormStatus: deps.onSetFormStatus,
+				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 			})
 			: null;
 
@@ -158,6 +169,19 @@
 			renderMainMessage(mainElement, "ダッシュボード表示モジュールの読み込みに失敗しました。");
 		}
 
+		/**
+		 * @param {HTMLElement} mainElement
+		 * @param {any} data
+		 */
+		function renderCalendarEditor(mainElement, data) {
+			if (calendarApi && typeof calendarApi.renderCalendarEditor === "function") {
+				calendarApi.renderCalendarEditor(mainElement, data);
+				return;
+			}
+
+			renderMainMessage(mainElement, "カレンダー編集モジュールの読み込みに失敗しました。");
+		}
+
 		return {
 			resolveEntryName,
 			resolveDashboardLabel,
@@ -168,6 +192,7 @@
 			updateOutlineProjectName,
 			updateDashboardButtonLabel,
 			renderDashboardOverview,
+			renderCalendarEditor,
 		};
 	}
 

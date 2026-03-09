@@ -246,6 +246,16 @@ function initializeRenderers() {
 			currentData.project = nextProject;
 			bridgeApi?.updateOutlineProjectName?.(nextProject);
 		},
+		onOpenCalendarEditor: () => {
+			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
+			if (!mainElement || !currentData) {
+				return;
+			}
+
+			if (rendererApi && typeof rendererApi.renderCalendarEditor === "function") {
+				rendererApi.renderCalendarEditor(mainElement, currentData);
+			}
+		},
 	});
 }
 
