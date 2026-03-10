@@ -134,6 +134,11 @@
 			if (rendererApi && typeof rendererApi.renderEntryDetail === "function") {
 				rendererApi.renderEntryDetail(mainElement, entry);
 			}
+
+			const formApi = deps.getFormApi();
+			if (formApi && typeof formApi.enterEditMode === "function") {
+				formApi.enterEditMode(entry);
+			}
 		}
 
 		/** @param {any} data @param {(item: any) => void} onSelect */

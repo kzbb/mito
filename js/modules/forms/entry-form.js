@@ -210,6 +210,8 @@
 			const dashboardLabel = deps.resolveDashboardLabel(currentData);
 			if (currentTitle === dashboardLabel) {
 				deps.renderDashboardOverview(mainElement, currentData);
+			} else if (mainElement.querySelector(".entry-wiki")) {
+				deps.renderEntryDetail(mainElement, nextEntry);
 			}
 
 			deps.setFormStatus("編集中: 入力内容をリアルタイム反映しました。");

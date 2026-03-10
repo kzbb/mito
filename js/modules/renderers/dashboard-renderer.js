@@ -5,6 +5,9 @@
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   onEnterEditMode: (entry: any) => void,
+	 *   onOpenEntryView: (entry: any) => void,
+	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
+	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>,
 	 *   resolveEntryName: (entry: any) => string,
 	 *   resolveDashboardLabel: (data: any) => string
 	 * }} deps
@@ -12,10 +15,18 @@
 	function createDashboardRenderer(deps) {
 		/** @type {ResizeObserver | null} */
 		let bucketResizeObserver = null;
+		/** @type {HTMLDivElement | null} */
+		let linkPreviewPopover = null;
+		/** @type {HTMLAnchorElement | null} */
+		let linkPreviewAnchor = null;
+		let activePreviewImageUrl = "";
+		let linkPreviewRequestId = 0;
 		const CRAMPED_THRESHOLD_REM = 17;
 
 		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
 		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
+		const createMarkdownEngine = /** @type {any} */ (globalObject).createMarkdownEngine;
+		const markdownEngine = typeof createMarkdownEngine === "function" ? createMarkdownEngine() : null;
 		const resolveCalendarSchema = calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
 		const resolveTimelineValues = calendarUtils?.resolveTimelineValues
 			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
@@ -26,6 +37,14 @@
 				}
 				return values;
 			});
+		const renderMarkdownToHtml = markdownEngine?.renderToHtml
+			?? ((/** @type {string} */ source) => source
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/\"/g, "&quot;")
+				.replace(/'/g, "&#39;")
+				.replace(/\n/g, "<br>"));
 
 		/**
 		 * @param {HTMLElement} mainElement
@@ -33,6 +52,7 @@
 		 */
 		function renderDashboardOverview(mainElement, data) {
 			teardownBucketObserver();
+			hideLinkPreview();
 
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
@@ -219,10 +239,11 @@
 		 * @returns {HTMLElement}
 		 */
 		function createEntryCard(entry) {
-			const card = document.createElement("button");
-			card.type = "button";
+			const card = document.createElement("div");
 			card.className = "dashboard-entry-card";
-			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)} を編集`);
+			card.tabIndex = 0;
+			card.setAttribute("role", "button");
+			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集、ダブルクリックで個別表示）`);
 
 			const name = document.createElement("span");
 			name.className = "dashboard-entry-card-name";
@@ -230,17 +251,397 @@
 			card.appendChild(name);
 
 			if (typeof entry?.description === "string" && entry.description.trim().length > 0) {
-				const description = document.createElement("span");
+				const description = document.createElement("div");
 				description.className = "dashboard-entry-card-description";
-				description.textContent = entry.description.trim();
+				const preview = buildDashboardDescriptionPreview(entry.description);
+				description.innerHTML = renderMarkdownToHtml(preview.source);
+				if (preview.truncated) {
+					const marker = document.createElement("p");
+					marker.className = "dashboard-entry-card-truncation";
+					marker.textContent = "...";
+					description.appendChild(marker);
+				}
+				description.addEventListener("click", (event) => {
+					void handleDescriptionLinkClick(event);
+				});
+				description.addEventListener("mouseover", handleDescriptionLinkHover);
+				description.addEventListener("mousemove", handleDescriptionLinkHoverMove);
+				description.addEventListener("mouseout", handleDescriptionLinkHoverOut);
+				description.addEventListener("focusin", handleDescriptionLinkFocusIn);
+				description.addEventListener("focusout", handleDescriptionLinkFocusOut);
 				card.appendChild(description);
 			}
 
-			card.addEventListener("click", () => {
+			card.addEventListener("click", (event) => {
+				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
+				if (target?.closest("a")) {
+					return;
+				}
+				deps.onEnterEditMode(entry);
+			});
+
+			card.addEventListener("dblclick", (event) => {
+				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
+				if (target?.closest("a")) {
+					return;
+				}
+
+				event.preventDefault();
+				deps.onOpenEntryView(entry);
+			});
+
+			card.addEventListener("keydown", (event) => {
+				if (event.key !== "Enter" && event.key !== " ") {
+					return;
+				}
+				event.preventDefault();
 				deps.onEnterEditMode(entry);
 			});
 
 			return card;
+		}
+
+		/**
+		 * @param {string} source
+		 * @returns {{ source: string, truncated: boolean }}
+		 */
+		function buildDashboardDescriptionPreview(source) {
+			const normalized = String(source ?? "").replace(/\r\n?/g, "\n");
+			if (!normalized.trim()) {
+				return { source: "", truncated: false };
+			}
+
+			const lines = normalized.split("\n");
+			let blankStreak = 0;
+			let truncateFrom = -1;
+
+			for (let index = 0; index < lines.length; index += 1) {
+				if (lines[index].trim().length === 0) {
+					blankStreak += 1;
+					if (blankStreak >= 2) {
+						truncateFrom = index - 1;
+						break;
+					}
+					continue;
+				}
+
+				blankStreak = 0;
+			}
+
+			if (truncateFrom < 0) {
+				return { source: normalized.trim(), truncated: false };
+			}
+
+			const previewSource = lines.slice(0, Math.max(0, truncateFrom)).join("\n").trimEnd();
+			return {
+				source: previewSource,
+				truncated: true,
+			};
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 * @returns {Promise<void>}
+		 */
+		async function handleDescriptionLinkClick(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const fileAnchor = target?.closest("a[data-mito-file-path]");
+			if (fileAnchor instanceof HTMLAnchorElement) {
+				event.preventDefault();
+				event.stopPropagation();
+				const filePath = String(fileAnchor.dataset.mitoFilePath ?? "").trim();
+				await deps.onOpenFileLink(filePath);
+				return;
+			}
+
+			const anchor = target?.closest("a[data-mito-link]");
+			if (!(anchor instanceof HTMLAnchorElement)) {
+				return;
+			}
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			const linkTarget = String(anchor.dataset.mitoLink ?? "").trim();
+			const linkedEntry = resolveEntryByName(linkTarget);
+			if (!linkedEntry) {
+				return;
+			}
+
+			deps.onOpenEntryView(linkedEntry);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHover(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const anchor = resolvePreviewAnchor(target);
+			if (!anchor) {
+				return;
+			}
+
+			void showResolvedLinkPreview(anchor, event.clientX, event.clientY);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHoverMove(event) {
+			if (!linkPreviewPopover || !linkPreviewAnchor) {
+				return;
+			}
+
+			positionLinkPreview(event.clientX, event.clientY);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHoverOut(event) {
+			const relatedTarget = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+			if (resolvePreviewAnchor(relatedTarget) === linkPreviewAnchor) {
+				return;
+			}
+
+			hideLinkPreview();
+		}
+
+		/**
+		 * @param {FocusEvent} event
+		 */
+		function handleDescriptionLinkFocusIn(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const anchor = resolvePreviewAnchor(target);
+			if (!anchor) {
+				return;
+			}
+
+			const rect = anchor.getBoundingClientRect();
+			void showResolvedLinkPreview(anchor, rect.left + (rect.width / 2), rect.bottom);
+		}
+
+		/**
+		 * @param {HTMLAnchorElement} anchor
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 * @returns {Promise<void>}
+		 */
+		async function showResolvedLinkPreview(anchor, clientX, clientY) {
+			const requestId = linkPreviewRequestId + 1;
+			linkPreviewRequestId = requestId;
+			const preview = await resolveLinkPreviewPayload(anchor);
+			if (!preview || requestId !== linkPreviewRequestId) {
+				return;
+			}
+
+			showLinkPreview(preview.anchor, preview.title, preview.body, preview.imageUrl, clientX, clientY);
+		}
+
+		/**
+		 * @param {FocusEvent} event
+		 */
+		function handleDescriptionLinkFocusOut(event) {
+			const relatedTarget = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+			if (resolvePreviewAnchor(relatedTarget) === linkPreviewAnchor) {
+				return;
+			}
+
+			hideLinkPreview();
+		}
+
+		/**
+		 * @param {HTMLElement | null} element
+		 * @returns {HTMLAnchorElement | null}
+		 */
+		function resolvePreviewAnchor(element) {
+			if (!element) {
+				return null;
+			}
+
+			const anchor = element.closest("a[data-mito-link], a[data-mito-file-path], a[href^='http://'], a[href^='https://']");
+			return anchor instanceof HTMLAnchorElement ? anchor : null;
+		}
+
+		/**
+		 * @param {HTMLElement | null} element
+		 * @returns {Promise<{ anchor: HTMLAnchorElement, title: string, body: string, imageUrl?: string } | null>}
+		 */
+		async function resolveLinkPreviewPayload(element) {
+			const anchor = resolvePreviewAnchor(element);
+			if (!anchor) {
+				return null;
+			}
+
+			const mitoTarget = String(anchor.dataset.mitoLink ?? "").trim();
+			if (mitoTarget) {
+				const linkedEntry = resolveEntryByName(mitoTarget);
+				if (!linkedEntry) {
+					hideLinkPreview();
+					return null;
+				}
+
+				const description = typeof linkedEntry?.description === "string" ? linkedEntry.description.trim() : "";
+				const previewText = description.length > 0 ? description.slice(0, 180) : "説明なし";
+				const suffix = description.length > 180 ? "..." : "";
+				return {
+					anchor,
+					title: deps.resolveEntryName(linkedEntry),
+					body: `${previewText}${suffix}`,
+				};
+			}
+
+			const filePath = String(anchor.dataset.mitoFilePath ?? "").trim();
+			if (filePath) {
+				if (typeof deps.onPreviewFileLink === "function") {
+					try {
+						const preview = await deps.onPreviewFileLink(filePath);
+						if (preview && typeof preview.title === "string" && typeof preview.body === "string") {
+							return {
+								anchor,
+								title: preview.title,
+								body: preview.body,
+								imageUrl: typeof preview.imageUrl === "string" ? preview.imageUrl : undefined,
+							};
+						}
+					} catch (error) {
+						console.error("Failed to resolve file preview", error);
+					}
+				}
+
+				return {
+					anchor,
+					title: "ファイルリンク",
+					body: filePath,
+				};
+			}
+
+			const href = String(anchor.getAttribute("href") ?? "").trim();
+			if (/^https?:\/\//i.test(href)) {
+				return {
+					anchor,
+					title: "外部リンク",
+					body: href,
+				};
+			}
+
+			return null;
+		}
+
+		/**
+		 * @returns {HTMLDivElement}
+		 */
+		function ensureLinkPreviewPopover() {
+			if (linkPreviewPopover) {
+				return linkPreviewPopover;
+			}
+
+			const popover = document.createElement("div");
+			popover.className = "dashboard-link-preview";
+			popover.hidden = true;
+			popover.setAttribute("role", "tooltip");
+			document.body.appendChild(popover);
+			linkPreviewPopover = popover;
+			return popover;
+		}
+
+		/**
+		 * @param {HTMLAnchorElement} anchor
+		 * @param {string} title
+		 * @param {string} bodyText
+		 * @param {string | undefined} imageUrl
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 */
+		function showLinkPreview(anchor, title, bodyText, imageUrl, clientX, clientY) {
+			const popover = ensureLinkPreviewPopover();
+			revokePreviewImageUrl();
+
+			popover.innerHTML = "";
+			const heading = document.createElement("div");
+			heading.className = "dashboard-link-preview-title";
+			heading.textContent = title;
+			popover.appendChild(heading);
+			if (typeof imageUrl === "string" && imageUrl.length > 0) {
+				const image = document.createElement("img");
+				image.className = "dashboard-link-preview-image";
+				image.src = imageUrl;
+				image.alt = title;
+				popover.appendChild(image);
+				activePreviewImageUrl = imageUrl;
+			}
+			const body = document.createElement("div");
+			body.className = "dashboard-link-preview-body";
+			body.textContent = bodyText;
+			popover.appendChild(body);
+
+			popover.hidden = false;
+			linkPreviewAnchor = anchor;
+			positionLinkPreview(clientX, clientY);
+		}
+
+		/**
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 */
+		function positionLinkPreview(clientX, clientY) {
+			if (!linkPreviewPopover) {
+				return;
+			}
+
+			const offset = 14;
+			const viewportMargin = 8;
+			const rect = linkPreviewPopover.getBoundingClientRect();
+			const maxX = Math.max(viewportMargin, window.innerWidth - rect.width - viewportMargin);
+			const maxY = Math.max(viewportMargin, window.innerHeight - rect.height - viewportMargin);
+			const left = Math.min(Math.max(viewportMargin, clientX + offset), maxX);
+			const top = Math.min(Math.max(viewportMargin, clientY + offset), maxY);
+
+			linkPreviewPopover.style.left = `${left}px`;
+			linkPreviewPopover.style.top = `${top}px`;
+		}
+
+		function hideLinkPreview() {
+			linkPreviewRequestId += 1;
+			linkPreviewAnchor = null;
+			revokePreviewImageUrl();
+			if (!linkPreviewPopover) {
+				return;
+			}
+
+			linkPreviewPopover.hidden = true;
+		}
+
+		function revokePreviewImageUrl() {
+			if (!activePreviewImageUrl.startsWith("blob:")) {
+				activePreviewImageUrl = "";
+				return;
+			}
+
+			URL.revokeObjectURL(activePreviewImageUrl);
+			activePreviewImageUrl = "";
+		}
+
+		/**
+		 * @param {string} targetName
+		 * @returns {any | null}
+		 */
+		function resolveEntryByName(targetName) {
+			if (!targetName) {
+				return null;
+			}
+
+			const normalizedTarget = targetName.trim().toLocaleLowerCase("ja");
+			const currentData = deps.getCurrentData();
+			const activeEntries = Array.isArray(currentData?.active) ? currentData.active : [];
+			for (const entry of activeEntries) {
+				const name = deps.resolveEntryName(entry).trim().toLocaleLowerCase("ja");
+				if (name === normalizedTarget) {
+					return entry;
+				}
+			}
+
+			return null;
 		}
 
 		/**

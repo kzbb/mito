@@ -6,6 +6,9 @@
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   onEnterEditMode: (entry: any) => void,
+	 *   onOpenEntryView: (entry: any) => void,
+	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
+	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>,
 	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
 	 *   onMoveEntryToDeletedFromDetail: (entry: any) => any | null,
 	 *   onPermanentlyDeleteDeletedEntry: (entry: any) => boolean,
@@ -65,12 +68,14 @@
 
 		const entryDetailApi = typeof createEntryDetailRenderer === "function"
 			? createEntryDetailRenderer({
-				onUpdateEntryFromDetail: deps.onUpdateEntryFromDetail,
 				onMoveEntryToDeletedFromDetail: deps.onMoveEntryToDeletedFromDetail,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 				getCurrentData: deps.getCurrentData,
 				resolveEntryName,
+				onOpenEntryView: deps.onOpenEntryView,
+				onOpenFileLink: deps.onOpenFileLink,
+				onPreviewFileLink: deps.onPreviewFileLink,
 			})
 			: null;
 
@@ -92,6 +97,9 @@
 			? createDashboardRenderer({
 				getCurrentData: deps.getCurrentData,
 				onEnterEditMode: deps.onEnterEditMode,
+				onOpenEntryView: deps.onOpenEntryView,
+				onOpenFileLink: deps.onOpenFileLink,
+				onPreviewFileLink: deps.onPreviewFileLink,
 				resolveEntryName,
 				resolveDashboardLabel,
 			})

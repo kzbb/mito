@@ -12,6 +12,9 @@ let currentFileName = "data.json";
 /** @type {any | null} */
 let currentFileHandle = null;
 
+/** @type {FileSystemDirectoryHandle | null} */
+let linkBaseDirectoryHandle = null;
+
 /** @type {any | null} */
 let rendererApi = null;
 
@@ -109,6 +112,13 @@ function initializeModules() {
 		getCurrentFileHandle: () => currentFileHandle,
 		setCurrentFileHandle: (/** @type {any | null} */ fileHandle) => {
 			currentFileHandle = fileHandle;
+			if (!fileHandle) {
+				linkBaseDirectoryHandle = null;
+			}
+		},
+		getLinkBaseDirectoryHandle: () => linkBaseDirectoryHandle,
+		setLinkBaseDirectoryHandle: (/** @type {FileSystemDirectoryHandle | null} */ directoryHandle) => {
+			linkBaseDirectoryHandle = directoryHandle;
 		},
 		getRendererApi: () => rendererApi,
 		setRendererApi: (/** @type {any | null} */ api) => {

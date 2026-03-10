@@ -3,19 +3,22 @@
 (function registerEntryDetailRenderer(globalObject) {
 	/**
 	 * @param {{
-	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
 	 *   onMoveEntryToDeletedFromDetail: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   getCurrentData: () => any,
-	 *   resolveEntryName: (entry: any) => string
+	 *   resolveEntryName: (entry: any) => string,
+	 *   onOpenEntryView: (entry: any) => void,
+	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
+	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>
 	 * }} deps
 	 */
 	function createEntryDetailRenderer(deps) {
 		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
 		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
+		const createMarkdownEngine = /** @type {any} */ (globalObject).createMarkdownEngine;
+		const markdownEngine = typeof createMarkdownEngine === "function" ? createMarkdownEngine() : null;
 		const resolveCalendarSchema = calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
-		const findCalendarRowByValue = calendarUtils?.findCalendarRowByValue ?? (() => null);
 		const resolveTimelineValues = calendarUtils?.resolveTimelineValues
 			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
 				/** @type {Record<string, string>} */
@@ -25,12 +28,28 @@
 				}
 				return values;
 			});
+		const renderMarkdownToHtml = markdownEngine?.renderToHtml
+			?? ((/** @type {string} */ source) => source
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/\"/g, "&quot;")
+				.replace(/'/g, "&#39;")
+				.replace(/\n/g, "<br>"));
+
+		/** @type {HTMLDivElement | null} */
+		let linkPreviewPopover = null;
+		/** @type {HTMLAnchorElement | null} */
+		let linkPreviewAnchor = null;
+		let activePreviewImageUrl = "";
+		let linkPreviewRequestId = 0;
 
 		/**
 		 * @param {HTMLElement} mainElement
 		 * @param {any} entry
 		 */
 		function renderEntryDetail(mainElement, entry) {
+			hideLinkPreview();
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";
@@ -41,47 +60,9 @@
 			const header = document.createElement("header");
 			header.className = "entry-wiki-header";
 
-			const title = document.createElement("input");
-			title.type = "text";
-			title.className = "entry-wiki-title entry-wiki-title-input";
-			title.value = deps.resolveEntryName(entry);
-			title.setAttribute("aria-label", "名称");
-
-			const commitNameEdit = () => {
-				const nextName = title.value.trim();
-				if (!nextName) {
-					title.value = deps.resolveEntryName(entry);
-					deps.onSetFormStatus("名称は空にできません。");
-					return;
-				}
-
-				if (nextName === deps.resolveEntryName(entry)) {
-					return;
-				}
-
-				const updatedEntry = deps.onUpdateEntryFromDetail(entry, { name: nextName });
-				if (!updatedEntry) {
-					title.value = deps.resolveEntryName(entry);
-					deps.onSetFormStatus("名称の更新に失敗しました。");
-					return;
-				}
-
-				deps.onSetFormStatus("名称を更新しました。");
-				deps.onSetTopbarSaveStatus("未保存: 名称変更あり");
-			};
-
-			title.addEventListener("blur", commitNameEdit);
-			title.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
-				if (event.key === "Enter") {
-					event.preventDefault();
-					title.blur();
-				}
-
-				if (event.key === "Escape") {
-					title.value = deps.resolveEntryName(entry);
-					title.blur();
-				}
-			});
+			const title = document.createElement("h1");
+			title.className = "entry-wiki-title";
+			title.textContent = deps.resolveEntryName(entry);
 
 			const headerTitleRow = document.createElement("div");
 			headerTitleRow.className = "entry-wiki-header-row";
@@ -105,84 +86,22 @@
 			headerTitleRow.appendChild(archiveButton);
 			header.appendChild(headerTitleRow);
 
-			const category = typeof entry?.category === "string" ? entry.category : "未分類";
+			const category = typeof entry?.category === "string" ? entry.category.trim() || "未分類" : "未分類";
 			const metaRow = document.createElement("div");
 			metaRow.className = "entry-wiki-meta-row";
-
-			/**
-			 * @param {"category" | "date"} key
-			 * @param {string} currentValue
-			 * @param {string} placeholder
-			 * @param {boolean} required
-			 * @param {string | null} labelText
-			 * @returns {HTMLDivElement}
-			 */
-			const createMetaField = (key, currentValue, placeholder, required, labelText) => {
-				const field = document.createElement("div");
-				field.className = labelText ? "entry-wiki-meta-field" : "entry-wiki-meta-item";
-
-				if (labelText) {
-					const label = document.createElement("span");
-					label.className = "entry-wiki-meta-label";
-					label.textContent = labelText;
-					field.appendChild(label);
-				}
-
-				const input = document.createElement("input");
-				input.type = "text";
-				input.className = "entry-wiki-meta-input";
-				const baseValue = currentValue === "-" ? "" : currentValue;
-				input.value = baseValue;
-				input.placeholder = placeholder;
-				input.setAttribute("aria-label", placeholder);
-
-				const commit = () => {
-					const nextValue = input.value.trim();
-					if (required && !nextValue) {
-						input.value = baseValue;
-						deps.onSetFormStatus(`${placeholder}は空にできません。`);
-						return;
-					}
-
-					if (nextValue === baseValue) {
-						return;
-					}
-
-					const updatedEntry = deps.onUpdateEntryFromDetail(entry, { [key]: nextValue });
-					if (!updatedEntry) {
-						input.value = baseValue;
-						deps.onSetFormStatus(`${placeholder}の更新に失敗しました。`);
-						return;
-					}
-
-					deps.onSetFormStatus(`${placeholder}を更新しました。`);
-					deps.onSetTopbarSaveStatus("未保存: エントリ更新あり");
-				};
-
-				input.addEventListener("blur", commit);
-				input.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
-					if (event.key === "Enter") {
-						event.preventDefault();
-						input.blur();
-					}
-
-					if (event.key === "Escape") {
-						input.value = baseValue;
-						input.blur();
-					}
-				});
-
-				field.appendChild(input);
-				return field;
-			};
-
-			metaRow.appendChild(createMetaField("category", category, "カテゴリ", true, null));
+			metaRow.appendChild(createMetaTag(category, "カテゴリ"));
+			const dateGroup = document.createElement("div");
+			dateGroup.className = "entry-wiki-meta-group entry-wiki-meta-group-date";
 
 			const schema = resolveCalendarSchema(deps.getCurrentData());
 			if (schema.headers.length > 0) {
-				metaRow.appendChild(createTimelineStack("date", "", schema, entry));
+				appendTimelineMetaTags(dateGroup, "date", schema, entry);
 			} else if (typeof entry?.date === "string" && entry.date.trim().length > 0) {
-				metaRow.appendChild(createMetaField("date", entry.date, "date", false, "date"));
+				dateGroup.appendChild(createMetaTag(entry.date.trim(), "日付"));
+			}
+
+			if (dateGroup.childElementCount > 0) {
+				metaRow.appendChild(dateGroup);
 			}
 			header.appendChild(metaRow);
 
@@ -191,209 +110,363 @@
 			const body = document.createElement("section");
 			body.className = "entry-wiki-body";
 
-			const summaryText = document.createElement("p");
-			summaryText.className = "entry-description entry-wiki-description-input";
-			summaryText.setAttribute("contenteditable", "true");
-			summaryText.setAttribute("role", "textbox");
-			summaryText.setAttribute("aria-multiline", "true");
-			summaryText.setAttribute("aria-label", "説明");
 			const descriptionText = typeof entry?.description === "string" ? entry.description : "";
-			summaryText.textContent = descriptionText;
-
-			const commitDescriptionEdit = () => {
-				const nextDescription = (summaryText.textContent ?? "").trim();
-				if (nextDescription === descriptionText) {
-					if (!nextDescription) {
-						summaryText.textContent = "";
-					}
-					return;
-				}
-
-				const updatedEntry = deps.onUpdateEntryFromDetail(entry, { description: nextDescription });
-				if (!updatedEntry) {
-					summaryText.textContent = descriptionText;
-					deps.onSetFormStatus("説明の更新に失敗しました。");
-					return;
-				}
-
-				deps.onSetFormStatus("説明を更新しました。");
-				deps.onSetTopbarSaveStatus("未保存: 説明変更あり");
-			};
-
-			summaryText.addEventListener("blur", commitDescriptionEdit);
-			summaryText.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
-				if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-					event.preventDefault();
-					summaryText.blur();
-				}
-
-				if (event.key === "Escape") {
-					event.preventDefault();
-					summaryText.textContent = descriptionText;
-					summaryText.blur();
-				}
-			});
-			body.appendChild(summaryText);
+			if (descriptionText.trim().length > 0) {
+				const summaryHtml = document.createElement("div");
+				summaryHtml.className = "entry-description";
+				summaryHtml.innerHTML = renderMarkdownToHtml(descriptionText.trim());
+				summaryHtml.addEventListener("click", (event) => {
+					void handleDescriptionLinkClick(event);
+				});
+				summaryHtml.addEventListener("mouseover", handleDescriptionLinkHover);
+				summaryHtml.addEventListener("mousemove", handleDescriptionLinkHoverMove);
+				summaryHtml.addEventListener("mouseout", handleDescriptionLinkHoverOut);
+				summaryHtml.addEventListener("focusin", handleDescriptionLinkFocusIn);
+				summaryHtml.addEventListener("focusout", handleDescriptionLinkFocusOut);
+				body.appendChild(summaryHtml);
+			} else {
+				const empty = document.createElement("p");
+				empty.className = "entry-description";
+				empty.textContent = "説明は未入力です。左下の入力欄から編集できます。";
+				body.appendChild(empty);
+			}
 
 			article.appendChild(body);
 			mainElement.appendChild(article);
 		}
 
 		/**
-		 * @param {string} key
-		 * @param {string} titleLabel
-		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
-		 * @param {any} entry
+		 * @param {string} value
+		 * @param {string} label
 		 * @returns {HTMLElement}
 		 */
-		function createTimelineStack(key, titleLabel, schema, entry) {
-			const stack = document.createElement("div");
-			stack.className = "entry-wiki-meta-stack";
+		function createMetaTag(value, label) {
+			const field = document.createElement("div");
+			field.className = "entry-wiki-meta-field";
 
-			const title = document.createElement("div");
-			title.className = "entry-wiki-meta-stack-title";
-			title.textContent = titleLabel;
-			stack.appendChild(title);
+			const labelElement = document.createElement("span");
+			labelElement.className = "entry-wiki-meta-label";
+			labelElement.textContent = label;
+			field.appendChild(labelElement);
 
-			const values = resolveTimelineValues(entry, key, schema.headers);
-
-			for (const header of schema.headers) {
-				const field = document.createElement("div");
-				field.className = "entry-wiki-meta-field";
-
-				const label = document.createElement("span");
-				label.className = "entry-wiki-meta-label";
-				label.textContent = header;
-				field.appendChild(label);
-
-				const select = document.createElement("select");
-				select.className = "entry-wiki-meta-input";
-				select.dataset.timelineHeader = header;
-				select.dataset.timelineKey = key;
-				select.setAttribute("aria-label", `${key} ${header}`);
-
-				const options = new Set();
-				for (const row of schema.rows) {
-					const candidate = String(row[header] ?? "").trim();
-					if (candidate.length > 0) {
-						options.add(candidate);
-					}
-				}
-
-				const currentValue = String(values[header] ?? "").trim();
-				if (currentValue.length > 0) {
-					options.add(currentValue);
-				}
-
-				const emptyOption = document.createElement("option");
-				emptyOption.value = "";
-				emptyOption.textContent = "";
-				select.appendChild(emptyOption);
-
-				for (const optionValue of Array.from(options).sort((a, b) => a.localeCompare(b, "ja"))) {
-					const option = document.createElement("option");
-					option.value = optionValue;
-					option.textContent = optionValue;
-					select.appendChild(option);
-				}
-
-				select.value = currentValue;
-				field.appendChild(select);
-
-				select.addEventListener("change", () => {
-					const matched = findCalendarRowByValue(schema.rows, header, select.value.trim());
-					if (matched) {
-						applyTimelineValues(stack, schema.headers, matched);
-					}
-					commitTimelineUpdate(entry, key, stack, schema.headers);
-				});
-
-				select.addEventListener("blur", () => {
-					commitTimelineUpdate(entry, key, stack, schema.headers);
-				});
-
-				select.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
-					if (event.key === "Enter") {
-						event.preventDefault();
-						select.blur();
-					}
-
-					if (event.key === "Escape") {
-						select.value = values[header] ?? "";
-						select.blur();
-					}
-				});
-
-				stack.appendChild(field);
-			}
-
-			return stack;
+			const text = document.createElement("span");
+			text.className = "entry-wiki-meta-input";
+			text.textContent = value;
+			field.appendChild(text);
+			return field;
 		}
 
 		/**
-		 * @param {HTMLElement} stack
-		 * @param {string[]} headers
-		 * @param {Record<string, string>} row
-		 */
-		function applyTimelineValues(stack, headers, row) {
-			for (const header of headers) {
-				const field = /** @type {HTMLSelectElement | HTMLInputElement | null} */ (
-					stack.querySelector(`[data-timeline-header="${cssEscapeAttr(header)}"]`)
-				);
-				if (field) {
-					field.value = String(row[header] ?? "");
-				}
-			}
-		}
-
-		/**
-		 * @param {any} entry
+		 * @param {HTMLElement} metaRow
 		 * @param {string} key
-		 * @param {HTMLElement} stack
-		 * @param {string[]} headers
+		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
+		 * @param {any} entry
 		 */
-		function commitTimelineUpdate(entry, key, stack, headers) {
-			/** @type {Record<string, string>} */
-			const values = {};
-			for (const header of headers) {
-				const field = /** @type {HTMLSelectElement | HTMLInputElement | null} */ (
-					stack.querySelector(`[data-timeline-header="${cssEscapeAttr(header)}"]`)
-				);
-				values[header] = field ? field.value.trim() : "";
+		function appendTimelineMetaTags(metaRow, key, schema, entry) {
+			const values = resolveTimelineValues(entry, key, schema.headers);
+			for (const header of schema.headers) {
+				const currentValue = String(values[header] ?? "").trim() || "-";
+				metaRow.appendChild(createMetaTag(currentValue, header));
 			}
-
-			const primaryHeader = headers[0] ?? "";
-			const baseline = resolveTimelineValues(entry, key, headers);
-			if (
-				headers.every((header) => String(values[header] ?? "") === String(baseline[header] ?? ""))
-			) {
-				return;
-			}
-
-			const payload = {
-				[`${key}Calendar`]: values,
-				[key]: primaryHeader ? String(values[primaryHeader] ?? "") : "",
-			};
-
-			const updatedEntry = deps.onUpdateEntryFromDetail(entry, payload);
-			if (!updatedEntry) {
-				deps.onSetFormStatus("日付の更新に失敗しました。");
-				return;
-			}
-
-			deps.onSetFormStatus("日付を更新しました。");
-			deps.onSetTopbarSaveStatus("未保存: エントリ更新あり");
 		}
 
 		/**
-		 * @param {string} value
-		 * @returns {string}
+		 * @param {MouseEvent} event
+		 * @returns {Promise<void>}
 		 */
-		function cssEscapeAttr(value) {
-			if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-				return CSS.escape(value);
+		async function handleDescriptionLinkClick(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const fileAnchor = target?.closest("a[data-mito-file-path]");
+			if (fileAnchor instanceof HTMLAnchorElement) {
+				event.preventDefault();
+				event.stopPropagation();
+				const filePath = String(fileAnchor.dataset.mitoFilePath ?? "").trim();
+				await deps.onOpenFileLink(filePath);
+				return;
 			}
-			return value.replace(/(["\\])/g, "\\$1");
+
+			const anchor = target?.closest("a[data-mito-link]");
+			if (!(anchor instanceof HTMLAnchorElement)) {
+				return;
+			}
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			const linkTarget = String(anchor.dataset.mitoLink ?? "").trim();
+			const linkedEntry = resolveEntryByName(linkTarget);
+			if (!linkedEntry) {
+				deps.onSetFormStatus(`リンク先が見つかりません: ${linkTarget}`);
+				return;
+			}
+
+			deps.onOpenEntryView(linkedEntry);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHover(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const anchor = resolvePreviewAnchor(target);
+			if (!anchor) {
+				return;
+			}
+
+			void showResolvedLinkPreview(anchor, event.clientX, event.clientY);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHoverMove(event) {
+			if (!linkPreviewPopover || !linkPreviewAnchor) {
+				return;
+			}
+
+			positionLinkPreview(event.clientX, event.clientY);
+		}
+
+		/**
+		 * @param {MouseEvent} event
+		 */
+		function handleDescriptionLinkHoverOut(event) {
+			const relatedTarget = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+			if (resolvePreviewAnchor(relatedTarget) === linkPreviewAnchor) {
+				return;
+			}
+
+			hideLinkPreview();
+		}
+
+		/**
+		 * @param {FocusEvent} event
+		 */
+		function handleDescriptionLinkFocusIn(event) {
+			const target = event.target instanceof HTMLElement ? event.target : null;
+			const anchor = resolvePreviewAnchor(target);
+			if (!anchor) {
+				return;
+			}
+
+			const rect = anchor.getBoundingClientRect();
+			void showResolvedLinkPreview(anchor, rect.left + (rect.width / 2), rect.bottom);
+		}
+
+		/**
+		 * @param {FocusEvent} event
+		 */
+		function handleDescriptionLinkFocusOut(event) {
+			const relatedTarget = event.relatedTarget instanceof HTMLElement ? event.relatedTarget : null;
+			if (resolvePreviewAnchor(relatedTarget) === linkPreviewAnchor) {
+				return;
+			}
+
+			hideLinkPreview();
+		}
+
+		/**
+		 * @param {HTMLElement | null} element
+		 * @returns {HTMLAnchorElement | null}
+		 */
+		function resolvePreviewAnchor(element) {
+			if (!element) {
+				return null;
+			}
+
+			const anchor = element.closest("a[data-mito-link], a[data-mito-file-path], a[href^='http://'], a[href^='https://']");
+			return anchor instanceof HTMLAnchorElement ? anchor : null;
+		}
+
+		/**
+		 * @param {HTMLElement | null} element
+		 * @returns {Promise<{ anchor: HTMLAnchorElement, title: string, body: string, imageUrl?: string } | null>}
+		 */
+		async function resolveLinkPreviewPayload(element) {
+			const anchor = resolvePreviewAnchor(element);
+			if (!anchor) {
+				return null;
+			}
+
+			const mitoTarget = String(anchor.dataset.mitoLink ?? "").trim();
+			if (mitoTarget) {
+				const linkedEntry = resolveEntryByName(mitoTarget);
+				if (!linkedEntry) {
+					hideLinkPreview();
+					return null;
+				}
+
+				const description = typeof linkedEntry?.description === "string" ? linkedEntry.description.trim() : "";
+				const previewText = description.length > 0 ? description.slice(0, 180) : "説明なし";
+				const suffix = description.length > 180 ? "..." : "";
+				return {
+					anchor,
+					title: deps.resolveEntryName(linkedEntry),
+					body: `${previewText}${suffix}`,
+				};
+			}
+
+			const filePath = String(anchor.dataset.mitoFilePath ?? "").trim();
+			if (filePath) {
+				if (typeof deps.onPreviewFileLink === "function") {
+					try {
+						const preview = await deps.onPreviewFileLink(filePath);
+						if (preview && typeof preview.title === "string" && typeof preview.body === "string") {
+							return {
+								anchor,
+								title: preview.title,
+								body: preview.body,
+								imageUrl: typeof preview.imageUrl === "string" ? preview.imageUrl : undefined,
+							};
+						}
+					} catch (error) {
+						console.error("Failed to resolve file preview", error);
+					}
+				}
+
+				return {
+					anchor,
+					title: "ファイルリンク",
+					body: filePath,
+				};
+			}
+
+			const href = String(anchor.getAttribute("href") ?? "").trim();
+			if (/^https?:\/\//i.test(href)) {
+				return {
+					anchor,
+					title: "外部リンク",
+					body: href,
+				};
+			}
+
+			return null;
+		}
+
+		/**
+		 * @returns {HTMLDivElement}
+		 */
+		function ensureLinkPreviewPopover() {
+			if (linkPreviewPopover) {
+				return linkPreviewPopover;
+			}
+
+			const popover = document.createElement("div");
+			popover.className = "dashboard-link-preview";
+			popover.hidden = true;
+			popover.setAttribute("role", "tooltip");
+			document.body.appendChild(popover);
+			linkPreviewPopover = popover;
+			return popover;
+		}
+
+		/**
+		 * @param {HTMLAnchorElement} anchor
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 * @returns {Promise<void>}
+		 */
+		async function showResolvedLinkPreview(anchor, clientX, clientY) {
+			const requestId = linkPreviewRequestId + 1;
+			linkPreviewRequestId = requestId;
+			const preview = await resolveLinkPreviewPayload(anchor);
+			if (!preview || requestId !== linkPreviewRequestId) {
+				return;
+			}
+
+			showLinkPreview(preview.anchor, preview.title, preview.body, preview.imageUrl, clientX, clientY);
+		}
+
+		/**
+		 * @param {HTMLAnchorElement} anchor
+		 * @param {string} title
+		 * @param {string} bodyText
+		 * @param {string | undefined} imageUrl
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 */
+		function showLinkPreview(anchor, title, bodyText, imageUrl, clientX, clientY) {
+			const popover = ensureLinkPreviewPopover();
+			revokePreviewImageUrl();
+
+			popover.innerHTML = "";
+			const heading = document.createElement("div");
+			heading.className = "dashboard-link-preview-title";
+			heading.textContent = title;
+			popover.appendChild(heading);
+			if (typeof imageUrl === "string" && imageUrl.length > 0) {
+				const image = document.createElement("img");
+				image.className = "dashboard-link-preview-image";
+				image.src = imageUrl;
+				image.alt = title;
+				popover.appendChild(image);
+				activePreviewImageUrl = imageUrl;
+			}
+			const body = document.createElement("div");
+			body.className = "dashboard-link-preview-body";
+			body.textContent = bodyText;
+			popover.appendChild(body);
+
+			popover.hidden = false;
+			linkPreviewAnchor = anchor;
+			positionLinkPreview(clientX, clientY);
+		}
+
+		/**
+		 * @param {number} clientX
+		 * @param {number} clientY
+		 */
+		function positionLinkPreview(clientX, clientY) {
+			if (!linkPreviewPopover) {
+				return;
+			}
+
+			const offset = 14;
+			const viewportMargin = 8;
+			const rect = linkPreviewPopover.getBoundingClientRect();
+			const maxX = Math.max(viewportMargin, window.innerWidth - rect.width - viewportMargin);
+			const maxY = Math.max(viewportMargin, window.innerHeight - rect.height - viewportMargin);
+			const left = Math.min(Math.max(viewportMargin, clientX + offset), maxX);
+			const top = Math.min(Math.max(viewportMargin, clientY + offset), maxY);
+
+			linkPreviewPopover.style.left = `${left}px`;
+			linkPreviewPopover.style.top = `${top}px`;
+		}
+
+		function hideLinkPreview() {
+			linkPreviewRequestId += 1;
+			linkPreviewAnchor = null;
+			revokePreviewImageUrl();
+			if (!linkPreviewPopover) {
+				return;
+			}
+
+			linkPreviewPopover.hidden = true;
+		}
+
+		function revokePreviewImageUrl() {
+			if (!activePreviewImageUrl.startsWith("blob:")) {
+				activePreviewImageUrl = "";
+				return;
+			}
+
+			URL.revokeObjectURL(activePreviewImageUrl);
+			activePreviewImageUrl = "";
+		}
+
+		/**
+		 * @param {string} name
+		 * @returns {any | null}
+		 */
+		function resolveEntryByName(name) {
+			const normalized = name.trim();
+			if (!normalized) {
+				return null;
+			}
+
+			const currentData = deps.getCurrentData();
+			const activeEntries = Array.isArray(currentData?.active) ? currentData.active : [];
+			return activeEntries.find((/** @type {any} */ candidate) => deps.resolveEntryName(candidate) === normalized) ?? null;
 		}
 
 		return {
