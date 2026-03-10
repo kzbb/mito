@@ -86,6 +86,7 @@
 
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
+			mainElement.classList.add("dashboard-view");
 			mainElement.innerHTML = "";
 
 			const title = document.createElement("h2");

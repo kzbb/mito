@@ -28,10 +28,12 @@
 		 * @param {any} data
 		 */
 		function populateCategoryOptions(data) {
-			const datalist = /** @type {HTMLDataListElement | null} */ (document.getElementById("category-options"));
-			if (!datalist) {
+			const select = /** @type {HTMLSelectElement | null} */ (document.getElementById("category-select"));
+			if (!select) {
 				return;
 			}
+
+			const selectedBeforeUpdate = select.value;
 
 			const categories = new Set();
 			const activeEntries = Array.isArray(data?.active) ? data.active : [];
@@ -47,11 +49,23 @@
 				}
 			}
 
-			datalist.innerHTML = "";
+			select.innerHTML = "";
+			const placeholder = document.createElement("option");
+			placeholder.value = "";
+			placeholder.textContent = "カテゴリを選択";
+			select.appendChild(placeholder);
+
 			for (const category of Array.from(categories).sort((a, b) => a.localeCompare(b, "ja"))) {
 				const option = document.createElement("option");
 				option.value = category;
-				datalist.appendChild(option);
+				option.textContent = category;
+				select.appendChild(option);
+			}
+
+			if (selectedBeforeUpdate && categories.has(selectedBeforeUpdate)) {
+				select.value = selectedBeforeUpdate;
+			} else {
+				select.value = "";
 			}
 		}
 

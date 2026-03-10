@@ -193,7 +193,6 @@
 						id: 1,
 						category: "出来事",
 						name: "新規エントリ",
-						date: "",
 						dateCalendar: {},
 						description: "まずは設定からカレンダーを追加してください。",
 					},

@@ -31,6 +31,7 @@
 		 * @param {any} data
 		 */
 		function renderCalendarEditor(mainElement, data) {
+			mainElement.classList.remove("dashboard-view");
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.add("calendar-editor-view");
 			mainElement.innerHTML = "";

@@ -53,6 +53,7 @@
 		 * @param {string} message
 		 */
 		function renderMainMessage(mainElement, message) {
+			mainElement.classList.remove("dashboard-view");
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";

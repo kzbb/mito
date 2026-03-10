@@ -71,6 +71,7 @@
 		 */
 		function renderSettingsOverview(mainElement, data) {
 			mainElement.innerHTML = "";
+			mainElement.classList.remove("dashboard-view");
 			mainElement.classList.add("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
 

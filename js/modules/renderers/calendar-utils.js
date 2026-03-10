@@ -68,6 +68,7 @@
 		 */
 		function findCalendarRowByValue(rows, key, value) {
 			const normalizedValue = String(value ?? "").trim();
+			const comparableValue = normalizeComparableText(normalizedValue);
 			if (!key || normalizedValue.length === 0) {
 				return null;
 			}
@@ -77,12 +78,29 @@
 					continue;
 				}
 
-				if (String(row[key] ?? "").trim() === normalizedValue) {
+				const candidate = String(row[key] ?? "").trim();
+				if (candidate === normalizedValue) {
+					return row;
+				}
+
+				if (normalizeComparableText(candidate) === comparableValue) {
 					return row;
 				}
 			}
 
 			return null;
+		}
+
+		/**
+		 * Normalize text for tolerant calendar value comparisons.
+		 * @param {string} value
+		 * @returns {string}
+		 */
+		function normalizeComparableText(value) {
+			return String(value ?? "")
+				.normalize("NFKC")
+				.replace(/[\u0020\u3000]+/g, "")
+				.toLowerCase();
 		}
 
 		/**
@@ -116,7 +134,7 @@
 			const primaryHeader = headers[0] ?? "";
 			if (primaryHeader && values[primaryHeader].length === 0) {
 				const fallback = key === "date"
-					? (typeof entry?.date === "string" ? entry.date : typeof entry?.from === "string" ? entry.from : "")
+					? (typeof entry?.from === "string" ? entry.from : "")
 					: entry?.[key];
 				if (typeof fallback === "string") {
 					values[primaryHeader] = fallback;

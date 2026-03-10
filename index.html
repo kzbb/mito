@@ -42,8 +42,9 @@
                     <form id="entry-form" class="entry-form">
                         <label class="form-field">
                             <span>カテゴリ</span>
-                            <input type="text" name="category" list="category-options" placeholder="カテゴリ" required>
-                            <datalist id="category-options"></datalist>
+                            <select id="category-select" name="category" required>
+                                <option value="">カテゴリを選択</option>
+                            </select>
                         </label>
 
                         <label class="form-field">

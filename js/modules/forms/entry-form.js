@@ -181,7 +181,7 @@
 			}
 
 			const targetEntry = currentData.active[targetIndex];
-			const categoryInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("category"));
+			const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 			const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
 			const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
 			if (!targetEntry || !categoryInput || !nameInput || !descriptionInput) {
@@ -208,14 +208,24 @@
 				return;
 			}
 
+			const treeAffectingChange = nextEntry.category !== targetEntry.category
+				|| nextEntry.name !== targetEntry.name;
+			const wasDetailView = Boolean(mainElement.querySelector(".entry-wiki"));
+
 			currentData.active[targetIndex] = nextEntry;
-			document.dispatchEvent(new CustomEvent("mito:data-changed"));
+
+			if (treeAffectingChange) {
+				deps.renderOutlineFromData(currentData);
+				deps.focusNewEntryInTree(nextEntry);
+			} else {
+				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+			}
 
 			const currentTitle = mainElement.querySelector("h2")?.textContent?.trim() ?? "";
 			const dashboardLabel = deps.resolveDashboardLabel(currentData);
 			if (currentTitle === dashboardLabel) {
 				deps.renderDashboardOverview(mainElement, currentData);
-			} else if (mainElement.querySelector(".entry-wiki")) {
+			} else if (wasDetailView) {
 				deps.renderEntryDetail(mainElement, nextEntry);
 			}
 
@@ -337,13 +347,16 @@
 				select.value = currentValue;
 				wrapper.appendChild(select);
 
-				select.addEventListener("change", () => {
+				const syncRowSelection = () => {
 					const row = findCalendarRowByValue(schema.rows, header, select.value.trim());
 					if (!row) {
 						return;
 					}
 					applyTimelineRowSelection(fieldset, schema.headers, row);
-				});
+				};
+
+				select.addEventListener("input", syncRowSelection);
+				select.addEventListener("change", syncRowSelection);
 
 				fieldset.appendChild(wrapper);
 			}
@@ -374,10 +387,9 @@
 			const currentData = deps.getCurrentData();
 			const schema = resolveCalendarSchema(currentData);
 			if (!Array.isArray(schema.headers) || schema.headers.length === 0) {
-				return { date: "", dateCalendar: {} };
+				return { dateCalendar: {} };
 			}
 
-			const primaryHeader = schema.headers[0] ?? "";
 			/** @type {Record<string, string>} */
 			const values = {};
 			for (const header of schema.headers) {
@@ -388,7 +400,6 @@
 
 			return {
 				dateCalendar: values,
-				date: primaryHeader ? String(values[primaryHeader] ?? "") : "",
 			};
 		}
 
@@ -445,7 +456,7 @@
 				return;
 			}
 
-			const categoryInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("category"));
+			const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 			const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
 			const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
 
@@ -472,7 +483,7 @@
 			syncDateInputs?.(null);
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			if (formElement) {
-				const categoryInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("category"));
+				const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 				const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
 				const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
 				if (categoryInput) {

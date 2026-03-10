@@ -4,6 +4,13 @@
 	gap: 10px;
 }
 
+.main-window.dashboard-view {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	padding-bottom: 0;
+}
+
 .dashboard-card {
 	display: grid;
 	grid-template-columns: 150px minmax(0, 1fr);
@@ -73,14 +80,17 @@
 
 .dashboard-table-wrap {
 	overflow: auto;
+	flex: 1 1 auto;
+	min-height: 0;
 	border: 1px solid var(--line);
-	border-radius: 10px;
+	border-radius: 0;
 	background: var(--panel-2);
 }
 
 .dashboard-table {
 	width: 100%;
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	min-width: 0;
 }
 
@@ -103,7 +113,7 @@
 .dashboard-table thead th {
 	position: sticky;
 	top: 0;
-	z-index: 1;
+	z-index: 6;
 	background: #e6dccf;
 	font-weight: 700;
 }
@@ -128,7 +138,7 @@
 .dashboard-entry-bucket {
 	display: flex;
 	flex-direction: row;
-	align-items: stretch;
+	align-items: flex-start;
 	flex-wrap: wrap;
 	gap: 6px;
 	width: 100%;

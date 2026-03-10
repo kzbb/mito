@@ -82,6 +82,7 @@
 		 */
 		function renderEntryDetail(mainElement, entry) {
 			linkPreviewHandler?.hide();
+			mainElement.classList.remove("dashboard-view");
 			mainElement.classList.remove("settings-view");
 			mainElement.classList.remove("calendar-editor-view");
 			mainElement.innerHTML = "";
@@ -128,8 +129,6 @@
 			const schema = resolveCalendarSchema(deps.getCurrentData());
 			if (schema.headers.length > 0) {
 				appendTimelineMetaTags(dateGroup, "date", schema, entry);
-			} else if (typeof entry?.date === "string" && entry.date.trim().length > 0) {
-				dateGroup.appendChild(createMetaTag(entry.date.trim(), "日付"));
 			}
 
 			if (dateGroup.childElementCount > 0) {
