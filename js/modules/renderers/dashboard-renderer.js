@@ -518,6 +518,12 @@
 						return leftOrder - rightOrder;
 					}
 
+					const leftId = resolveEntryNumericId(left);
+					const rightId = resolveEntryNumericId(right);
+					if (leftId !== rightId) {
+						return leftId - rightId;
+					}
+
 					return deps.resolveEntryName(left).localeCompare(deps.resolveEntryName(right), "ja");
 				});
 			}
@@ -532,6 +538,15 @@
 		function resolveDashboardOrder(entry) {
 			const parsed = Number.parseInt(String(entry?.dashboardOrder ?? ""), 10);
 			return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+		}
+
+		/**
+		 * @param {any} entry
+		 * @returns {number}
+		 */
+		function resolveEntryNumericId(entry) {
+			const parsed = Number.parseInt(String(entry?.id ?? ""), 10);
+			return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
 		}
 
 		/**
