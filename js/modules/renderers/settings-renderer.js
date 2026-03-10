@@ -4,6 +4,8 @@
 	/**
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   onPermanentlyDeleteDeletedEntry: (entry: any) => boolean,
+	 *   onRestoreDeletedEntry: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   onProjectNameInput: (nextProject: string) => void,
@@ -21,9 +23,9 @@
 		function renderSettingsButton(data, onSelect) {
 			const settings = data?.settings && typeof data.settings === "object" ? data.settings : null;
 			const calendar = data?.calendar && typeof data.calendar === "object" ? data.calendar : null;
-			const archivedEntries = Array.isArray(data?.archived) ? data.archived : [];
+			const deletedEntries = Array.isArray(data?.deleted) ? data.deleted : [];
 
-			if (!settings && !calendar && archivedEntries.length === 0) {
+			if (!settings && !calendar && deletedEntries.length === 0) {
 				setSettingsButtonState(null, null);
 				return null;
 			}
@@ -78,7 +80,7 @@
 			mainElement.appendChild(title);
 
 			const settings = data?.settings && typeof data.settings === "object" ? data.settings : {};
-			const archivedEntries = Array.isArray(data?.archived) ? data.archived : [];
+			const deletedEntries = Array.isArray(data?.deleted) ? data.deleted : [];
 			const projectName = typeof data?.project === "string" ? data.project : "";
 
 			const calendarSection = document.createElement("section");
@@ -185,13 +187,13 @@
 			archivedSection.className = "settings-section";
 			const archivedTitle = document.createElement("h3");
 			archivedTitle.className = "settings-section-title";
-			archivedTitle.textContent = "Archived";
+			archivedTitle.textContent = "削除されたアイテム";
 			archivedSection.appendChild(archivedTitle);
 
-			if (archivedEntries.length === 0) {
+			if (deletedEntries.length === 0) {
 				const empty = document.createElement("p");
 				empty.className = "settings-section-hint";
-				empty.textContent = "Archived itemはありません。";
+				empty.textContent = "削除されたアイテムはありません。";
 				archivedSection.appendChild(empty);
 				mainElement.appendChild(archivedSection);
 				return;
@@ -199,10 +201,55 @@
 
 			const archivedList = document.createElement("ul");
 			archivedList.className = "settings-archived-list";
-			for (const entry of archivedEntries) {
+			for (const entry of deletedEntries) {
 				const li = document.createElement("li");
 				li.className = "settings-archived-item";
-				li.textContent = deps.resolveEntryName(entry);
+
+				const name = document.createElement("span");
+				name.className = "settings-archived-name";
+				name.textContent = deps.resolveEntryName(entry);
+				li.appendChild(name);
+
+				const actions = document.createElement("div");
+				actions.className = "settings-archived-actions";
+
+				const restoreButton = document.createElement("button");
+				restoreButton.type = "button";
+				restoreButton.className = "settings-archived-restore";
+				restoreButton.textContent = "復元";
+				restoreButton.setAttribute("aria-label", `${deps.resolveEntryName(entry)} を復元`);
+				restoreButton.addEventListener("click", () => {
+					const restoredEntry = deps.onRestoreDeletedEntry(entry);
+					if (!restoredEntry) {
+						deps.onSetFormStatus("削除されたアイテムの復元に失敗しました。");
+						return;
+					}
+
+					deps.onSetFormStatus("削除されたアイテムを復元しました。");
+					deps.onSetTopbarSaveStatus("未保存: 復元あり");
+					renderSettingsOverview(mainElement, deps.getCurrentData());
+				});
+				actions.appendChild(restoreButton);
+
+				const deleteButton = document.createElement("button");
+				deleteButton.type = "button";
+				deleteButton.className = "settings-archived-delete";
+				deleteButton.textContent = "完全に削除";
+				deleteButton.setAttribute("aria-label", `${deps.resolveEntryName(entry)} を完全削除`);
+				deleteButton.addEventListener("click", () => {
+					const deleted = deps.onPermanentlyDeleteDeletedEntry(entry);
+					if (!deleted) {
+						deps.onSetFormStatus("削除されたアイテムの完全削除に失敗しました。");
+						return;
+					}
+
+					deps.onSetFormStatus("削除されたアイテムを完全に削除しました。");
+					deps.onSetTopbarSaveStatus("未保存: 完全削除あり");
+					renderSettingsOverview(mainElement, deps.getCurrentData());
+				});
+				actions.appendChild(deleteButton);
+
+				li.appendChild(actions);
 				archivedList.appendChild(li);
 			}
 			archivedSection.appendChild(archivedList);

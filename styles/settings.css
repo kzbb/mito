@@ -120,4 +120,60 @@
 	border-radius: 999px;
 	font-size: 0.76rem;
 	background: #f5ede0;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.settings-archived-name {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.settings-archived-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.settings-archived-restore {
+	border: 1px solid #9fb18f;
+	background: #f7fbf2;
+	color: #2f5a2a;
+	border-radius: 999px;
+	padding: 2px 8px;
+	font: inherit;
+	font-size: 0.72rem;
+	cursor: pointer;
+}
+
+.settings-archived-restore:hover {
+	background: #eaf5df;
+	border-color: #7c9a67;
+}
+
+.settings-archived-restore:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+.settings-archived-delete {
+	border: 1px solid #bfa487;
+	background: #fff9f2;
+	color: #7c2f28;
+	border-radius: 999px;
+	padding: 2px 8px;
+	font: inherit;
+	font-size: 0.72rem;
+	cursor: pointer;
+}
+
+.settings-archived-delete:hover {
+	background: #fde8e4;
+	border-color: #a64a3f;
+}
+
+.settings-archived-delete:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
 }

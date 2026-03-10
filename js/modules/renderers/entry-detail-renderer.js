@@ -4,6 +4,7 @@
 	/**
 	 * @param {{
 	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
+	 *   onMoveEntryToDeletedFromDetail: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   getCurrentData: () => any,
@@ -85,6 +86,23 @@
 			const headerTitleRow = document.createElement("div");
 			headerTitleRow.className = "entry-wiki-header-row";
 			headerTitleRow.appendChild(title);
+
+			const archiveButton = document.createElement("button");
+			archiveButton.type = "button";
+			archiveButton.className = "entry-wiki-archive-button";
+			archiveButton.textContent = "削除";
+			archiveButton.setAttribute("aria-label", "このエントリを削除済みへ移動");
+			archiveButton.addEventListener("click", () => {
+				const movedEntry = deps.onMoveEntryToDeletedFromDetail(entry);
+				if (!movedEntry) {
+					deps.onSetFormStatus("削除済みへの移動に失敗しました。");
+					return;
+				}
+
+				deps.onSetFormStatus("削除済みへ移動しました。");
+				deps.onSetTopbarSaveStatus("未保存: 削除移動あり");
+			});
+			headerTitleRow.appendChild(archiveButton);
 			header.appendChild(headerTitleRow);
 
 			const category = typeof entry?.category === "string" ? entry.category : "未分類";

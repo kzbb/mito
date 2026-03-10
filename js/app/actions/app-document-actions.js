@@ -72,7 +72,7 @@
 						description: "まずは設定からカレンダーを追加してください。",
 					},
 				],
-				archived: [],
+				deleted: [],
 			};
 		}
 

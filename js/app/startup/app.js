@@ -43,8 +43,8 @@ let moduleInitializersApi = null;
  * @typedef {{ type: "dashboard", data: any, button: HTMLButtonElement }} DashboardSelection
  * @typedef {{ type: "active", entry: any, button: HTMLButtonElement }} ActiveSelection
  * @typedef {{ type: "setting", data: any, button: HTMLButtonElement }} SettingSelection
- * @typedef {{ type: "archived", entry: any, button: HTMLButtonElement }} ArchivedSelection
- * @typedef {DashboardSelection | ActiveSelection | SettingSelection | ArchivedSelection} SidebarSelection
+ * @typedef {{ type: "deleted", entry: any, button: HTMLButtonElement }} DeletedSelection
+ * @typedef {DashboardSelection | ActiveSelection | SettingSelection | DeletedSelection} SidebarSelection
  */
 
 initializeModules();

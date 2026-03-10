@@ -192,6 +192,75 @@
 
 					return updatedEntry;
 				},
+				onMoveEntryToDeletedFromDetail: (/** @type {any} */ entry) => {
+					const currentData = deps.getCurrentData();
+					if (!currentData) {
+						return null;
+					}
+
+					const entryId = String(entry?.id ?? "");
+					const targetIndex = deps.getBridgeApi()?.findActiveEntryIndexById?.(currentData, entryId) ?? -1;
+					if (targetIndex < 0) {
+						return null;
+					}
+
+					if (!Array.isArray(currentData.deleted)) {
+						currentData.deleted = [];
+					}
+
+					const [deletedEntry] = currentData.active.splice(targetIndex, 1);
+					if (!deletedEntry) {
+						return null;
+					}
+
+					currentData.deleted.unshift(deletedEntry);
+					if (deps.getEditingEntryId() === entryId) {
+						deps.setEditingEntryId(null);
+					}
+
+					deps.renderOutlineFromData(currentData);
+					return deletedEntry;
+				},
+				onPermanentlyDeleteDeletedEntry: (/** @type {any} */ entry) => {
+					const currentData = deps.getCurrentData();
+					if (!currentData || !Array.isArray(currentData.deleted)) {
+						return false;
+					}
+
+					const entryId = String(entry?.id ?? "");
+					const index = currentData.deleted.findIndex((/** @type {any} */ item) => String(item?.id ?? "") === entryId);
+					if (index < 0) {
+						return false;
+					}
+
+					currentData.deleted.splice(index, 1);
+					return true;
+				},
+				onRestoreDeletedEntry: (/** @type {any} */ entry) => {
+					const currentData = deps.getCurrentData();
+					if (!currentData || !Array.isArray(currentData.deleted)) {
+						return null;
+					}
+
+					const entryId = String(entry?.id ?? "");
+					const index = currentData.deleted.findIndex((/** @type {any} */ item) => String(item?.id ?? "") === entryId);
+					if (index < 0) {
+						return null;
+					}
+
+					if (!Array.isArray(currentData.active)) {
+						currentData.active = [];
+					}
+
+					const [restoredEntry] = currentData.deleted.splice(index, 1);
+					if (!restoredEntry) {
+						return null;
+					}
+
+					currentData.active.unshift(restoredEntry);
+					deps.renderOutlineFromData(currentData);
+					return restoredEntry;
+				},
 				onSetFormStatus: deps.setFormStatus,
 				onSetTopbarSaveStatus: deps.setTopbarSaveStatus,
 				onProjectNameInput: (/** @type {string} */ nextProject) => {

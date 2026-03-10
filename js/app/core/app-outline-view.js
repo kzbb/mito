@@ -35,9 +35,9 @@
 
 			const categories = new Set();
 			const activeEntries = Array.isArray(data?.active) ? data.active : [];
-			const archivedEntries = Array.isArray(data?.archived) ? data.archived : [];
+			const deletedEntries = Array.isArray(data?.deleted) ? data.deleted : [];
 
-			for (const entry of [...activeEntries, ...archivedEntries]) {
+			for (const entry of [...activeEntries, ...deletedEntries]) {
 				if (!entry || typeof entry !== "object") {
 					continue;
 				}
@@ -142,7 +142,7 @@
 			hideSettingsButton();
 			deps.setTreeMessage(treeElement, "「新規作成」または「開く」で開始してください");
 			deps.renderMainMessage(mainElement, "");
-			populateCategoryOptions({ active: [], archived: [] });
+			populateCategoryOptions({ active: [], deleted: [] });
 			deps.setFormModeAdd();
 			document.dispatchEvent(new CustomEvent("mito:data-changed"));
 		}

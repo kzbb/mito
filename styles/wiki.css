@@ -50,6 +50,30 @@
 	gap: 10px;
 }
 
+.entry-wiki-archive-button {
+	border: 1px solid #cdbfa9;
+	background: #f7eee0;
+	color: #5f503c;
+	border-radius: 999px;
+	padding: 5px 10px;
+	font: inherit;
+	font-size: 0.78rem;
+	font-weight: 700;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.entry-wiki-archive-button:hover {
+	background: #efe0c9;
+	border-color: #b9a88f;
+}
+
+.entry-wiki-archive-button:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+	border-color: var(--accent);
+}
+
 .entry-wiki-title {
 	margin: 0;
 	font-size: 3rem;

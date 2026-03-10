@@ -7,6 +7,9 @@
 	 *   getCurrentData: () => any,
 	 *   onEnterEditMode: (entry: any) => void,
 	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
+	 *   onMoveEntryToDeletedFromDetail: (entry: any) => any | null,
+	 *   onPermanentlyDeleteDeletedEntry: (entry: any) => boolean,
+	 *   onRestoreDeletedEntry: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   onProjectNameInput: (nextProject: string) => void,
@@ -66,6 +69,7 @@
 		const entryDetailApi = typeof createEntryDetailRenderer === "function"
 			? createEntryDetailRenderer({
 				onUpdateEntryFromDetail: deps.onUpdateEntryFromDetail,
+				onMoveEntryToDeletedFromDetail: deps.onMoveEntryToDeletedFromDetail,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 				getCurrentData: deps.getCurrentData,
@@ -76,6 +80,8 @@
 		const settingsApi = typeof createSettingsRenderer === "function"
 			? createSettingsRenderer({
 				getCurrentData: deps.getCurrentData,
+				onPermanentlyDeleteDeletedEntry: deps.onPermanentlyDeleteDeletedEntry,
+				onRestoreDeletedEntry: deps.onRestoreDeletedEntry,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 				onProjectNameInput: deps.onProjectNameInput,
