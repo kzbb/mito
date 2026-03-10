@@ -123,11 +123,8 @@
 				return;
 			}
 			mainElement.innerHTML = "";
-			const title = document.createElement("h2");
-			title.textContent = "Main Content";
 			const paragraph = document.createElement("p");
 			paragraph.textContent = message;
-			mainElement.appendChild(title);
 			mainElement.appendChild(paragraph);
 		}
 
