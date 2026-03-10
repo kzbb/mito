@@ -39,15 +39,31 @@
 		function setupEntryForm() {
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
+			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
+			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
 
-			if (!formElement || !mainElement) {
+			if (!formElement || !mainElement || !submitButton || !resetButton) {
 				return;
 			}
 
 			syncDateInputs = setupTimelineFields(formElement);
 			syncDateInputs(null);
+			resetButton.hidden = true;
 			document.addEventListener("mito:data-changed", () => {
-				syncDateInputs?.(null);
+				const currentData = deps.getCurrentData();
+				const editingEntryId = deps.getEditingEntryId();
+				if (!currentData || !editingEntryId || !Array.isArray(currentData.active)) {
+					syncDateInputs?.(null);
+					return;
+				}
+
+				const targetIndex = deps.findActiveEntryIndexById(currentData, editingEntryId);
+				if (targetIndex < 0) {
+					syncDateInputs?.(null);
+					return;
+				}
+
+				syncDateInputs?.(currentData.active[targetIndex] ?? null);
 			});
 
 			formElement.addEventListener("keydown", (event) => {
@@ -70,8 +86,20 @@
 				focusables[nextIndex].focus();
 			});
 
+			const handleRealtimeEdit = () => {
+				applyRealtimeEdit(formElement, mainElement);
+			};
+			formElement.addEventListener("input", handleRealtimeEdit);
+			formElement.addEventListener("change", handleRealtimeEdit);
+
 			formElement.addEventListener("submit", (event) => {
 				event.preventDefault();
+
+				const editingEntryId = deps.getEditingEntryId();
+				if (editingEntryId !== null) {
+					deps.setFormStatus("編集中は自動反映されます。新規追加する場合は「新規作成」を押してください。");
+					return;
+				}
 
 				const formData = new FormData(formElement);
 				const category = readTrimmedFormValue(formData, "category");
@@ -104,48 +132,87 @@
 					currentData.active = [];
 				}
 
-				/** @type {any} */
-				let targetEntry = null;
-				const editingEntryId = deps.getEditingEntryId();
-				const isUpdateMode = editingEntryId !== null;
-
-				if (isUpdateMode) {
-					const targetIndex = deps.findActiveEntryIndexById(currentData, editingEntryId);
-					if (targetIndex >= 0) {
-						targetEntry = { ...currentData.active[targetIndex], ...entryPayload };
-						currentData.active[targetIndex] = targetEntry;
-					} else {
-						setFormModeAdd();
-					}
-				}
-
-				if (!targetEntry) {
-					const nextId = deps.getNextActiveId(currentData);
-					targetEntry = { id: nextId, ...entryPayload };
-					currentData.active.push(targetEntry);
-				}
+				const nextId = deps.getNextActiveId(currentData);
+				const targetEntry = { id: nextId, ...entryPayload };
+				currentData.active.push(targetEntry);
 
 				deps.renderOutlineFromData(currentData);
 				if (wasDashboardView) {
 					deps.renderDashboardOverview(mainElement, currentData);
-					deps.setFormStatus(isUpdateMode
-						? "選択したエントリを更新し、年表表示を維持しました。"
-						: "新しいエントリを追加し、年表表示を維持しました。");
+					deps.setFormStatus("新しいエントリを追加し、年表表示を維持しました。");
 					return;
 				}
 
 				deps.focusNewEntryInTree(targetEntry);
 				deps.renderEntryDetail(mainElement, targetEntry);
-				deps.setFormStatus(isUpdateMode
-					? "選択したエントリを更新し、該当カテゴリへ反映しました。"
-					: "新しいエントリを追加し、該当カテゴリへ反映しました。");
+				deps.setFormStatus("新しいエントリを追加し、該当カテゴリへ反映しました。");
 			});
 
 			formElement.addEventListener("reset", () => {
 				setFormModeAdd();
 				syncDateInputs?.(null);
-				deps.setFormStatus("入力フォームをクリアしました。");
+				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「追加」を押してください。");
 			});
+		}
+
+		/**
+		 * @param {HTMLFormElement} formElement
+		 * @param {HTMLElement} mainElement
+		 */
+		function applyRealtimeEdit(formElement, mainElement) {
+			const editingEntryId = deps.getEditingEntryId();
+			if (!editingEntryId) {
+				return;
+			}
+
+			const currentData = deps.getCurrentData();
+			if (!currentData || !Array.isArray(currentData.active)) {
+				return;
+			}
+
+			const targetIndex = deps.findActiveEntryIndexById(currentData, editingEntryId);
+			if (targetIndex < 0) {
+				return;
+			}
+
+			const targetEntry = currentData.active[targetIndex];
+			const categoryInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("category"));
+			const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
+			const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
+			if (!targetEntry || !categoryInput || !nameInput || !descriptionInput) {
+				return;
+			}
+
+			const nextCategory = categoryInput.value.trim();
+			const nextName = nameInput.value.trim();
+			if (!nextCategory || !nextName) {
+				return;
+			}
+
+			const timelinePayload = buildTimelinePayload(formElement);
+			const nextPayload = {
+				category: nextCategory,
+				name: nextName,
+				description: descriptionInput.value.trim(),
+				...timelinePayload,
+			};
+
+			const nextEntry = { ...targetEntry, ...nextPayload };
+			const changed = JSON.stringify(nextEntry) !== JSON.stringify(targetEntry);
+			if (!changed) {
+				return;
+			}
+
+			currentData.active[targetIndex] = nextEntry;
+			document.dispatchEvent(new CustomEvent("mito:data-changed"));
+
+			const currentTitle = mainElement.querySelector("h2")?.textContent?.trim() ?? "";
+			const dashboardLabel = deps.resolveDashboardLabel(currentData);
+			if (currentTitle === dashboardLabel) {
+				deps.renderDashboardOverview(mainElement, currentData);
+			}
+
+			deps.setFormStatus("編集中: 入力内容をリアルタイム反映しました。");
 		}
 
 		/**
@@ -221,7 +288,6 @@
 			}
 
 			const values = resolveTimelineValues(entry, key, schema.headers);
-			const dataListIdBase = `timeline-${key}-${Math.random().toString(36).slice(2, 7)}`;
 
 			for (const header of schema.headers) {
 				const wrapper = document.createElement("label");
@@ -231,18 +297,11 @@
 				label.textContent = header;
 				wrapper.appendChild(label);
 
-				const input = document.createElement("input");
-				input.type = "text";
-				input.name = `${key}Calendar.${header}`;
-				input.dataset.timelineField = header;
-				input.value = values[header] ?? "";
-				input.placeholder = header;
-				const dataListId = `${dataListIdBase}-${schema.headers.indexOf(header)}`;
-				input.setAttribute("list", dataListId);
-				wrapper.appendChild(input);
+				const select = document.createElement("select");
+				select.name = `${key}Calendar.${header}`;
+				select.dataset.timelineField = header;
+				select.setAttribute("aria-label", header);
 
-				const datalist = document.createElement("datalist");
-				datalist.id = dataListId;
 				const options = new Set();
 				for (const row of schema.rows) {
 					const candidate = String(row[header] ?? "").trim();
@@ -250,15 +309,29 @@
 						options.add(candidate);
 					}
 				}
-				for (const optionValue of Array.from(options)) {
+
+				const currentValue = String(values[header] ?? "").trim();
+				if (currentValue.length > 0) {
+					options.add(currentValue);
+				}
+
+				const emptyOption = document.createElement("option");
+				emptyOption.value = "";
+				emptyOption.textContent = "";
+				select.appendChild(emptyOption);
+
+				for (const optionValue of Array.from(options).sort((a, b) => a.localeCompare(b, "ja"))) {
 					const option = document.createElement("option");
 					option.value = optionValue;
-					datalist.appendChild(option);
+					option.textContent = optionValue;
+					select.appendChild(option);
 				}
-				wrapper.appendChild(datalist);
 
-				input.addEventListener("change", () => {
-					const row = findCalendarRowByValue(schema.rows, header, input.value.trim());
+				select.value = currentValue;
+				wrapper.appendChild(select);
+
+				select.addEventListener("change", () => {
+					const row = findCalendarRowByValue(schema.rows, header, select.value.trim());
 					if (!row) {
 						return;
 					}
@@ -278,10 +351,10 @@
 		 */
 		function applyTimelineRowSelection(groupElement, headers, row) {
 			for (const header of headers) {
-				const selector = `input[data-timeline-field="${cssEscapeAttr(header)}"]`;
-				const input = /** @type {HTMLInputElement | null} */ (groupElement.querySelector(selector));
-				if (input) {
-					input.value = String(row[header] ?? "");
+				const selector = `[data-timeline-field="${cssEscapeAttr(header)}"]`;
+				const field = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (groupElement.querySelector(selector));
+				if (field) {
+					field.value = String(row[header] ?? "");
 				}
 			}
 		}
@@ -302,8 +375,8 @@
 			const values = {};
 			for (const header of schema.headers) {
 				const inputName = `dateCalendar.${header}`;
-				const input = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem(inputName));
-				values[header] = input ? input.value.trim() : "";
+				const field = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem(inputName));
+				values[header] = field ? field.value.trim() : "";
 			}
 
 			return {
@@ -359,8 +432,9 @@
 		function enterEditMode(entry) {
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
+			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
 
-			if (!formElement || !submitButton) {
+			if (!formElement || !submitButton || !resetButton) {
 				return;
 			}
 
@@ -378,8 +452,9 @@
 			descriptionInput.value = typeof entry?.description === "string" ? entry.description : "";
 			syncDateInputs?.(entry);
 
-			submitButton.textContent = "更新";
-			deps.setFormStatus("編集中: 内容を修正して「更新」を押すと反映されます。");
+			submitButton.hidden = true;
+			resetButton.hidden = false;
+			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。新規追加する場合は「新規作成」を押してください。");
 		}
 
 		/**
@@ -388,9 +463,30 @@
 		function setFormModeAdd() {
 			deps.setEditingEntryId(null);
 			syncDateInputs?.(null);
+			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
+			if (formElement) {
+				const categoryInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("category"));
+				const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
+				const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
+				if (categoryInput) {
+					categoryInput.value = "";
+				}
+				if (nameInput) {
+					nameInput.value = "";
+				}
+				if (descriptionInput) {
+					descriptionInput.value = "";
+				}
+			}
+
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
+			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
 			if (submitButton) {
 				submitButton.textContent = "追加";
+				submitButton.hidden = false;
+			}
+			if (resetButton) {
+				resetButton.hidden = true;
 			}
 		}
 

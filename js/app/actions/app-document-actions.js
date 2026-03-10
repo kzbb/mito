@@ -65,19 +65,23 @@
 
 		/**
 		 * @param {any} calendar
-		 * @returns {null | { csv: string }}
+		 * @returns {null | { csvText: string }}
 		 */
 		function normalizeCalendar(calendar) {
 			if (!calendar || typeof calendar !== "object" || Array.isArray(calendar)) {
 				return null;
 			}
 
-			const csv = typeof calendar.csv === "string" ? calendar.csv : "";
-			if (!csv) {
+			const csvText = typeof calendar.csvText === "string"
+				? calendar.csvText
+				: typeof calendar.csv === "string"
+					? calendar.csv
+					: "";
+			if (!csvText) {
 				return null;
 			}
 
-			return { csv };
+			return { csvText };
 		}
 
 		/**

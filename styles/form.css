@@ -3,6 +3,14 @@
 	gap: 10px;
 }
 
+.entry-pane-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
 .form-grid-2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -48,13 +56,16 @@
 .form-field {
 	display: grid;
 	gap: 4px;
+	min-width: 0;
 	font-size: 0.8rem;
 	color: var(--muted);
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
 	width: 100%;
+	box-sizing: border-box;
 	border: 1px solid var(--line);
 	border-radius: 6px;
 	padding: 7px 8px;
@@ -65,25 +76,41 @@
 }
 
 .form-field input:focus,
+.form-field select:focus,
 .form-field textarea:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
 	border-color: var(--accent);
+	box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .form-actions {
 	display: flex;
 	gap: 8px;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+.form-actions-inline {
+	margin-left: auto;
 }
 
 .form-actions button {
-	padding: 6px 10px;
-	font-size: 0.84rem;
+	padding: 4px 8px;
+	font-size: 0.78rem;
 }
 
+
 .form-actions button:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
+}
+
+.form-actions button:focus-visible {
+	outline: none;
+	box-shadow: inset 0 0 0 2px #ffd37a;
+}
+
+.form-actions button[type="reset"]:focus-visible {
+	box-shadow: inset 0 0 0 2px #0f5ea8;
 }
 
 .form-actions button[type="submit"] {

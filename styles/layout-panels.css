@@ -38,6 +38,7 @@
 
 .main-window {
 	border-right: 0;
+	background: linear-gradient(180deg, #ece8de 0%, var(--panel) 42%, #fcfbf8 100%);
 }
 
 .explorer-tree {

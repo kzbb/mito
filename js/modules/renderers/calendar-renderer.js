@@ -351,6 +351,8 @@
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 			}
 
+			renderGrid();
+
 		}
 
 		return {

@@ -55,7 +55,17 @@
 	font-size: 0.76rem;
 }
 
+#new-file:focus,
+#open-file:focus,
+#save-file:focus,
 #outline-settings:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
+}
+
+#new-file:focus-visible,
+#open-file:focus-visible,
+#save-file:focus-visible,
+#outline-settings:focus-visible {
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--accent);
 }

@@ -25,9 +25,9 @@
 }
 
 .entry-wiki-description-input:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
 	border-color: var(--accent);
+	box-shadow: inset 0 0 0 2px var(--accent);
 	background: #ffffff;
 }
 
@@ -69,8 +69,8 @@
 }
 
 .entry-wiki-archive-button:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--accent);
 	border-color: var(--accent);
 }
 
@@ -100,9 +100,9 @@
 }
 
 .entry-wiki-title-input:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
 	border-color: var(--accent);
+	box-shadow: inset 0 0 0 2px var(--accent);
 	background: #fffdf8;
 }
 
@@ -160,6 +160,11 @@
 	font-size: 0.78rem;
 }
 
+select.entry-wiki-meta-input {
+	width: 100%;
+	box-sizing: border-box;
+}
+
 .entry-wiki-meta-item .entry-wiki-meta-input {
 	border-radius: 999px;
 	min-width: 140px;
@@ -171,9 +176,9 @@
 }
 
 .entry-wiki-meta-input:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
 	border-color: var(--accent);
+	box-shadow: inset 0 0 0 2px var(--accent);
 	background: #fffdf8;
 	color: var(--text);
 }

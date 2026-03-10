@@ -32,7 +32,13 @@
                 <div class="left-pane-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize left panel sections"></div>
 
                 <section class="left-pane bottom-pane" aria-label="Data entry panel">
-                    <div class="pane-title">データ入力</div>
+                    <div class="entry-pane-header">
+                        <div class="pane-title">データ入力</div>
+                        <div class="form-actions form-actions-inline">
+                            <button type="submit" id="preview-entry" form="entry-form">追加</button>
+                            <button type="reset" id="start-new-entry" form="entry-form">新規</button>
+                        </div>
+                    </div>
                     <form id="entry-form" class="entry-form">
                         <label class="form-field">
                             <span>カテゴリ</span>
@@ -50,10 +56,6 @@
                             <textarea name="description" rows="4" placeholder="説明を入力"></textarea>
                         </label>
 
-                        <div class="form-actions">
-                            <button type="submit" id="preview-entry">追加</button>
-                            <button type="reset">クリア</button>
-                        </div>
                     </form>
                 </section>
             </aside>

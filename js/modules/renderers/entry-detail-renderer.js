@@ -110,7 +110,7 @@
 			metaRow.className = "entry-wiki-meta-row";
 
 			/**
-			 * @param {"category"} key
+			 * @param {"category" | "date"} key
 			 * @param {string} currentValue
 			 * @param {string} placeholder
 			 * @param {boolean} required
@@ -181,6 +181,8 @@
 			const schema = resolveCalendarSchema(deps.getCurrentData());
 			if (schema.headers.length > 0) {
 				metaRow.appendChild(createTimelineStack("date", "", schema, entry));
+			} else if (typeof entry?.date === "string" && entry.date.trim().length > 0) {
+				metaRow.appendChild(createMetaField("date", entry.date, "date", false, "date"));
 			}
 			header.appendChild(metaRow);
 
@@ -254,7 +256,6 @@
 			stack.appendChild(title);
 
 			const values = resolveTimelineValues(entry, key, schema.headers);
-			const listIdBase = `entry-${key}-${Math.random().toString(36).slice(2, 7)}`;
 
 			for (const header of schema.headers) {
 				const field = document.createElement("div");
@@ -265,19 +266,12 @@
 				label.textContent = header;
 				field.appendChild(label);
 
-				const input = document.createElement("input");
-				input.type = "text";
-				input.className = "entry-wiki-meta-input";
-				input.value = values[header] ?? "";
-				input.dataset.timelineHeader = header;
-				input.dataset.timelineKey = key;
-				input.setAttribute("aria-label", `${key} ${header}`);
+				const select = document.createElement("select");
+				select.className = "entry-wiki-meta-input";
+				select.dataset.timelineHeader = header;
+				select.dataset.timelineKey = key;
+				select.setAttribute("aria-label", `${key} ${header}`);
 
-				const listId = `${listIdBase}-${schema.headers.indexOf(header)}`;
-				input.setAttribute("list", listId);
-
-				const datalist = document.createElement("datalist");
-				datalist.id = listId;
 				const options = new Set();
 				for (const row of schema.rows) {
 					const candidate = String(row[header] ?? "").trim();
@@ -285,35 +279,48 @@
 						options.add(candidate);
 					}
 				}
-				for (const optionValue of Array.from(options)) {
+
+				const currentValue = String(values[header] ?? "").trim();
+				if (currentValue.length > 0) {
+					options.add(currentValue);
+				}
+
+				const emptyOption = document.createElement("option");
+				emptyOption.value = "";
+				emptyOption.textContent = "";
+				select.appendChild(emptyOption);
+
+				for (const optionValue of Array.from(options).sort((a, b) => a.localeCompare(b, "ja"))) {
 					const option = document.createElement("option");
 					option.value = optionValue;
-					datalist.appendChild(option);
+					option.textContent = optionValue;
+					select.appendChild(option);
 				}
-				field.appendChild(input);
-				field.appendChild(datalist);
 
-				input.addEventListener("change", () => {
-					const matched = findCalendarRowByValue(schema.rows, header, input.value.trim());
+				select.value = currentValue;
+				field.appendChild(select);
+
+				select.addEventListener("change", () => {
+					const matched = findCalendarRowByValue(schema.rows, header, select.value.trim());
 					if (matched) {
 						applyTimelineValues(stack, schema.headers, matched);
 					}
 					commitTimelineUpdate(entry, key, stack, schema.headers);
 				});
 
-				input.addEventListener("blur", () => {
+				select.addEventListener("blur", () => {
 					commitTimelineUpdate(entry, key, stack, schema.headers);
 				});
 
-				input.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
+				select.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
 					if (event.key === "Enter") {
 						event.preventDefault();
-						input.blur();
+						select.blur();
 					}
 
 					if (event.key === "Escape") {
-						input.value = values[header] ?? "";
-						input.blur();
+						select.value = values[header] ?? "";
+						select.blur();
 					}
 				});
 
@@ -330,11 +337,11 @@
 		 */
 		function applyTimelineValues(stack, headers, row) {
 			for (const header of headers) {
-				const input = /** @type {HTMLInputElement | null} */ (
-					stack.querySelector(`input[data-timeline-header="${cssEscapeAttr(header)}"]`)
+				const field = /** @type {HTMLSelectElement | HTMLInputElement | null} */ (
+					stack.querySelector(`[data-timeline-header="${cssEscapeAttr(header)}"]`)
 				);
-				if (input) {
-					input.value = String(row[header] ?? "");
+				if (field) {
+					field.value = String(row[header] ?? "");
 				}
 			}
 		}
@@ -349,10 +356,10 @@
 			/** @type {Record<string, string>} */
 			const values = {};
 			for (const header of headers) {
-				const input = /** @type {HTMLInputElement | null} */ (
-					stack.querySelector(`input[data-timeline-header="${cssEscapeAttr(header)}"]`)
+				const field = /** @type {HTMLSelectElement | HTMLInputElement | null} */ (
+					stack.querySelector(`[data-timeline-header="${cssEscapeAttr(header)}"]`)
 				);
-				values[header] = input ? input.value.trim() : "";
+				values[header] = field ? field.value.trim() : "";
 			}
 
 			const primaryHeader = headers[0] ?? "";

@@ -22,8 +22,8 @@
 }
 
 .dashboard-card:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .dashboard-card-time {
@@ -63,4 +63,125 @@
 	margin: 8px 0 0;
 	font-size: 0.9rem;
 	line-height: 1.5;
+}
+
+.dashboard-range {
+	margin: 6px 0 10px;
+	font-size: 0.85rem;
+	color: var(--muted);
+}
+
+.dashboard-table-wrap {
+	overflow: auto;
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	background: var(--panel-2);
+}
+
+.dashboard-table {
+	width: 100%;
+	border-collapse: collapse;
+	min-width: 0;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+	border-bottom: 1px solid var(--line);
+	padding: 6px 6px;
+	vertical-align: top;
+	text-align: left;
+	font-size: 0.9rem;
+}
+
+.dashboard-calendar-header,
+.dashboard-calendar-cell {
+	padding-left: 1rem;
+	padding-right: 1rem;
+	white-space: nowrap;
+}
+
+.dashboard-table thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: #e6dccf;
+	font-weight: 700;
+}
+
+.dashboard-entry-column {
+	min-width: 0;
+}
+
+.dashboard-entry-col {
+	width: auto;
+}
+
+.dashboard-entry-cell.is-empty {
+	color: var(--muted);
+}
+
+.dashboard-entry-cell {
+	white-space: normal;
+	overflow: visible;
+}
+
+.dashboard-entry-bucket {
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	flex-wrap: wrap;
+	gap: 6px;
+	width: 100%;
+	overflow: visible;
+}
+
+.dashboard-entry-bucket.is-stacked {
+	flex-direction: column;
+}
+
+.dashboard-entry-card {
+	appearance: none;
+	border: 1px solid #c8b69b;
+	border-radius: 8px;
+	padding: 7px 9px;
+	background: #f7efe2;
+	box-shadow: 0 2px 6px rgba(43, 35, 24, 0.14);
+	text-align: left;
+	display: grid;
+	gap: 4px;
+	cursor: pointer;
+	flex: 1 1 13rem;
+	min-width: min(10rem, 100%);
+	max-width: 16rem;
+	box-sizing: border-box;
+}
+
+.dashboard-entry-bucket.is-stacked .dashboard-entry-card {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.dashboard-entry-card:hover {
+	background: #efe2ce;
+	border-color: #b8a68b;
+}
+
+.dashboard-entry-card:focus-visible {
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.dashboard-entry-card-name {
+	font-size: 0.88rem;
+	font-weight: 700;
+	line-height: 1.35;
+	color: var(--fg);
+}
+
+.dashboard-entry-card-description {
+	font-size: 0.82rem;
+	line-height: 1.45;
+	color: var(--muted);
+	white-space: normal;
+	word-break: break-word;
 }

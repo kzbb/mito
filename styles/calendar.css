@@ -1,7 +1,10 @@
 .calendar-editor-view {
 	display: grid;
-	gap: 10px;
-	align-content: start;
+	grid-template-rows: auto auto auto minmax(0, 1fr);
+	gap: 12px;
+	align-content: stretch;
+	min-height: 0;
+	padding-top: 6px;
 }
 
 .calendar-editor-title {
@@ -65,8 +68,8 @@
 }
 
 .calendar-tool-button:focus {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--accent);
 }
 
 .calendar-info {
@@ -80,7 +83,10 @@
 	border: 1px solid var(--line);
 	border-radius: 8px;
 	background: #fffdf8;
-	max-height: min(62vh, 700px);
+	min-height: 0;
+	height: 100%;
+	padding-bottom: 10px;
+	box-sizing: border-box;
 }
 
 .calendar-grid {
