@@ -6,7 +6,7 @@
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   onEnterEditMode: (entry: any) => void,
-	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, string>) => any | null,
+	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
 	 *   onProjectNameInput: (nextProject: string) => void,
@@ -68,6 +68,7 @@
 				onUpdateEntryFromDetail: deps.onUpdateEntryFromDetail,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
+				getCurrentData: deps.getCurrentData,
 				resolveEntryName,
 			})
 			: null;
@@ -86,6 +87,7 @@
 
 		const dashboardApi = typeof createDashboardRenderer === "function"
 			? createDashboardRenderer({
+				getCurrentData: deps.getCurrentData,
 				onEnterEditMode: deps.onEnterEditMode,
 				resolveEntryName,
 				resolveDashboardLabel,

@@ -18,6 +18,116 @@
 
 		/**
 		 * @param {any} data
+		 * @returns {{ headers: string[], rows: Record<string, string>[] }}
+		 */
+		function resolveCalendarSchema(data) {
+			const grid = resolveInitialGrid(data);
+			if (!Array.isArray(grid) || grid.length < 2) {
+				return { headers: [], rows: [] };
+			}
+
+			const headerRow = Array.isArray(grid[0]) ? grid[0] : [];
+			const headers = headerRow
+				.map((cell) => String(cell ?? "").trim())
+				.filter((cell) => cell.length > 0);
+
+			if (headers.length === 0) {
+				return { headers: [], rows: [] };
+			}
+
+			/** @type {Record<string, string>[]} */
+			const rows = [];
+			for (let rowIndex = 1; rowIndex < grid.length; rowIndex += 1) {
+				const sourceRow = Array.isArray(grid[rowIndex]) ? grid[rowIndex] : [];
+				/** @type {Record<string, string>} */
+				const rowRecord = {};
+				let hasValue = false;
+
+				for (let colIndex = 0; colIndex < headers.length; colIndex += 1) {
+					const header = headers[colIndex];
+					const value = String(sourceRow[colIndex] ?? "").trim();
+					rowRecord[header] = value;
+					if (value.length > 0) {
+						hasValue = true;
+					}
+				}
+
+				if (hasValue) {
+					rows.push(rowRecord);
+				}
+			}
+
+			return { headers, rows };
+		}
+
+		/**
+		 * @param {Record<string, string>[]} rows
+		 * @param {string} key
+		 * @param {string} value
+		 * @returns {Record<string, string> | null}
+		 */
+		function findCalendarRowByValue(rows, key, value) {
+			const normalizedValue = String(value ?? "").trim();
+			if (!key || normalizedValue.length === 0) {
+				return null;
+			}
+
+			for (const row of rows) {
+				if (!row || typeof row !== "object") {
+					continue;
+				}
+
+				if (String(row[key] ?? "").trim() === normalizedValue) {
+					return row;
+				}
+			}
+
+			return null;
+		}
+
+		/**
+		 * @param {any} entry
+		 * @param {string} key
+		 * @param {string[]} headers
+		 * @returns {Record<string, string>}
+		 */
+		function resolveTimelineValues(entry, key, headers) {
+			/** @type {Record<string, string>} */
+			const values = {};
+			for (const header of headers) {
+				values[header] = "";
+			}
+
+			if (!entry || typeof entry !== "object") {
+				return values;
+			}
+
+			const compoundKey = key === "date" ? "dateCalendar" : `${key}Calendar`;
+			const source = entry?.[compoundKey];
+			if (source && typeof source === "object") {
+				for (const header of headers) {
+					const currentValue = source[header];
+					if (typeof currentValue === "string") {
+						values[header] = currentValue;
+					}
+				}
+			}
+
+			const primaryHeader = headers[0] ?? "";
+			if (primaryHeader && values[primaryHeader].length === 0) {
+				const fallback = key === "date"
+					? (typeof entry?.date === "string" ? entry.date : typeof entry?.from === "string" ? entry.from : "")
+					: entry?.[key];
+				if (typeof fallback === "string") {
+					values[primaryHeader] = fallback;
+				}
+			}
+
+			return values;
+		}
+
+		/**
+		 * @param {any} data
 		 * @param {string} csvText
 		 */
 		function persistCalendar(data, csvText) {
@@ -206,7 +316,10 @@
 
 		return {
 			resolveInitialGrid,
+			resolveCalendarSchema,
 			persistCalendar,
+			findCalendarRowByValue,
+			resolveTimelineValues,
 			getGridWidth,
 			normalizeGridShape,
 			parseCsv,

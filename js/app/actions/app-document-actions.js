@@ -52,7 +52,6 @@
 		 * @returns {any}
 		 */
 		function createNewDocumentTemplate() {
-			const today = new Date().toISOString().slice(0, 10);
 			return {
 				project: "新規プロジェクト",
 				generatedAt: new Date().toISOString(),
@@ -68,9 +67,9 @@
 						id: 1,
 						category: "出来事",
 						name: "新規エントリ",
-						from: today,
-						to: today,
-						description: "ここからデータを追加してください。",
+						date: "",
+						dateCalendar: {},
+						description: "まずは設定からカレンダーを追加してください。",
 					},
 				],
 				archived: [],
@@ -113,6 +112,49 @@
 			delete settings.masterCategoryDashboard;
 			delete settings.language;
 			delete settings.calendar;
+
+			normalizeEntryDateFields(data.active);
+			normalizeEntryDateFields(data.archived);
+		}
+
+		/**
+		 * @param {any} entries
+		 */
+		function normalizeEntryDateFields(entries) {
+			if (!Array.isArray(entries)) {
+				return;
+			}
+
+			for (const entry of entries) {
+				if (!entry || typeof entry !== "object") {
+					continue;
+				}
+
+				if (typeof entry.date !== "string") {
+					if (typeof entry.from === "string") {
+						entry.date = entry.from;
+					} else if (typeof entry.to === "string") {
+						entry.date = entry.to;
+					} else {
+						entry.date = "";
+					}
+				}
+
+				if (!entry.dateCalendar || typeof entry.dateCalendar !== "object") {
+					if (entry.fromCalendar && typeof entry.fromCalendar === "object") {
+						entry.dateCalendar = { ...entry.fromCalendar };
+					} else if (entry.toCalendar && typeof entry.toCalendar === "object") {
+						entry.dateCalendar = { ...entry.toCalendar };
+					} else {
+						entry.dateCalendar = {};
+					}
+				}
+
+				delete entry.from;
+				delete entry.to;
+				delete entry.fromCalendar;
+				delete entry.toCalendar;
+			}
 		}
 
 		return {

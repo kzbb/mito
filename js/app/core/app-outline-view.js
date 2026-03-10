@@ -124,6 +124,8 @@
 			if (editingEntryId && !deps.findActiveEntryById(data, editingEntryId)) {
 				deps.setFormModeAdd();
 			}
+
+			document.dispatchEvent(new CustomEvent("mito:data-changed"));
 		}
 
 		/**
@@ -144,6 +146,7 @@
 			deps.renderMainMessage(mainElement, "");
 			populateCategoryOptions({ active: [], archived: [] });
 			deps.setFormModeAdd();
+			document.dispatchEvent(new CustomEvent("mito:data-changed"));
 		}
 
 		/**

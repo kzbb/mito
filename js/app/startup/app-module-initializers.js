@@ -166,7 +166,7 @@
 				onEnterEditMode: (/** @type {any} */ entry) => {
 					deps.getBridgeApi()?.enterEditMode?.(entry);
 				},
-				onUpdateEntryFromDetail: (/** @type {any} */ entry, /** @type {Record<string, string>} */ payload) => {
+				onUpdateEntryFromDetail: (/** @type {any} */ entry, /** @type {Record<string, any>} */ payload) => {
 					const currentData = deps.getCurrentData();
 					if (!currentData) {
 						return null;

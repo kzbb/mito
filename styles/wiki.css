@@ -106,6 +106,14 @@
 	gap: 8px;
 }
 
+.entry-wiki-meta-stack-title {
+	grid-column: 1 / -1;
+	font-size: 0.72rem;
+	color: #6f6456;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
 .entry-wiki-meta-field {
 	display: grid;
 	gap: 2px;

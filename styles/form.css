@@ -9,6 +9,42 @@
 	gap: 8px;
 }
 
+.timeline-field-groups {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 8px;
+}
+
+.timeline-empty-hint {
+	margin: 0;
+	font-size: 0.78rem;
+	color: var(--muted);
+}
+
+.timeline-fieldset {
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	padding: 8px;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin: 0;
+}
+
+.timeline-legend {
+	padding: 0 4px;
+	font-size: 0.75rem;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+@media (max-width: 900px) {
+	.timeline-fieldset {
+		grid-template-columns: 1fr;
+	}
+}
+
 .form-field {
 	display: grid;
 	gap: 4px;

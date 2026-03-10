@@ -3,13 +3,28 @@
 (function registerEntryDetailRenderer(globalObject) {
 	/**
 	 * @param {{
-	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, string>) => any | null,
+	 *   onUpdateEntryFromDetail: (entry: any, payload: Record<string, any>) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
+	 *   getCurrentData: () => any,
 	 *   resolveEntryName: (entry: any) => string
 	 * }} deps
 	 */
 	function createEntryDetailRenderer(deps) {
+		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
+		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
+		const resolveCalendarSchema = calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
+		const findCalendarRowByValue = calendarUtils?.findCalendarRowByValue ?? (() => null);
+		const resolveTimelineValues = calendarUtils?.resolveTimelineValues
+			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
+				/** @type {Record<string, string>} */
+				const values = {};
+				for (const header of headers) {
+					values[header] = "";
+				}
+				return values;
+			});
+
 		/**
 		 * @param {HTMLElement} mainElement
 		 * @param {any} entry
@@ -73,13 +88,11 @@
 			header.appendChild(headerTitleRow);
 
 			const category = typeof entry?.category === "string" ? entry.category : "未分類";
-			const fromValue = typeof entry?.from === "string" && entry.from.length > 0 ? entry.from : "-";
-			const toValue = typeof entry?.to === "string" && entry.to.length > 0 ? entry.to : "-";
 			const metaRow = document.createElement("div");
 			metaRow.className = "entry-wiki-meta-row";
 
 			/**
-			 * @param {"category" | "from" | "to"} key
+			 * @param {"category"} key
 			 * @param {string} currentValue
 			 * @param {string} placeholder
 			 * @param {boolean} required
@@ -147,11 +160,10 @@
 
 			metaRow.appendChild(createMetaField("category", category, "カテゴリ", true, null));
 
-			const dateStack = document.createElement("div");
-			dateStack.className = "entry-wiki-meta-stack";
-			dateStack.appendChild(createMetaField("from", fromValue, "YYYY-MM-DD", false, "from"));
-			dateStack.appendChild(createMetaField("to", toValue, "YYYY-MM-DD", false, "to"));
-			metaRow.appendChild(dateStack);
+			const schema = resolveCalendarSchema(deps.getCurrentData());
+			if (schema.headers.length > 0) {
+				metaRow.appendChild(createTimelineStack("date", "", schema, entry));
+			}
 			header.appendChild(metaRow);
 
 			article.appendChild(header);
@@ -205,6 +217,158 @@
 
 			article.appendChild(body);
 			mainElement.appendChild(article);
+		}
+
+		/**
+		 * @param {string} key
+		 * @param {string} titleLabel
+		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
+		 * @param {any} entry
+		 * @returns {HTMLElement}
+		 */
+		function createTimelineStack(key, titleLabel, schema, entry) {
+			const stack = document.createElement("div");
+			stack.className = "entry-wiki-meta-stack";
+
+			const title = document.createElement("div");
+			title.className = "entry-wiki-meta-stack-title";
+			title.textContent = titleLabel;
+			stack.appendChild(title);
+
+			const values = resolveTimelineValues(entry, key, schema.headers);
+			const listIdBase = `entry-${key}-${Math.random().toString(36).slice(2, 7)}`;
+
+			for (const header of schema.headers) {
+				const field = document.createElement("div");
+				field.className = "entry-wiki-meta-field";
+
+				const label = document.createElement("span");
+				label.className = "entry-wiki-meta-label";
+				label.textContent = header;
+				field.appendChild(label);
+
+				const input = document.createElement("input");
+				input.type = "text";
+				input.className = "entry-wiki-meta-input";
+				input.value = values[header] ?? "";
+				input.dataset.timelineHeader = header;
+				input.dataset.timelineKey = key;
+				input.setAttribute("aria-label", `${key} ${header}`);
+
+				const listId = `${listIdBase}-${schema.headers.indexOf(header)}`;
+				input.setAttribute("list", listId);
+
+				const datalist = document.createElement("datalist");
+				datalist.id = listId;
+				const options = new Set();
+				for (const row of schema.rows) {
+					const candidate = String(row[header] ?? "").trim();
+					if (candidate.length > 0) {
+						options.add(candidate);
+					}
+				}
+				for (const optionValue of Array.from(options)) {
+					const option = document.createElement("option");
+					option.value = optionValue;
+					datalist.appendChild(option);
+				}
+				field.appendChild(input);
+				field.appendChild(datalist);
+
+				input.addEventListener("change", () => {
+					const matched = findCalendarRowByValue(schema.rows, header, input.value.trim());
+					if (matched) {
+						applyTimelineValues(stack, schema.headers, matched);
+					}
+					commitTimelineUpdate(entry, key, stack, schema.headers);
+				});
+
+				input.addEventListener("blur", () => {
+					commitTimelineUpdate(entry, key, stack, schema.headers);
+				});
+
+				input.addEventListener("keydown", /** @param {KeyboardEvent} event */ (event) => {
+					if (event.key === "Enter") {
+						event.preventDefault();
+						input.blur();
+					}
+
+					if (event.key === "Escape") {
+						input.value = values[header] ?? "";
+						input.blur();
+					}
+				});
+
+				stack.appendChild(field);
+			}
+
+			return stack;
+		}
+
+		/**
+		 * @param {HTMLElement} stack
+		 * @param {string[]} headers
+		 * @param {Record<string, string>} row
+		 */
+		function applyTimelineValues(stack, headers, row) {
+			for (const header of headers) {
+				const input = /** @type {HTMLInputElement | null} */ (
+					stack.querySelector(`input[data-timeline-header="${cssEscapeAttr(header)}"]`)
+				);
+				if (input) {
+					input.value = String(row[header] ?? "");
+				}
+			}
+		}
+
+		/**
+		 * @param {any} entry
+		 * @param {string} key
+		 * @param {HTMLElement} stack
+		 * @param {string[]} headers
+		 */
+		function commitTimelineUpdate(entry, key, stack, headers) {
+			/** @type {Record<string, string>} */
+			const values = {};
+			for (const header of headers) {
+				const input = /** @type {HTMLInputElement | null} */ (
+					stack.querySelector(`input[data-timeline-header="${cssEscapeAttr(header)}"]`)
+				);
+				values[header] = input ? input.value.trim() : "";
+			}
+
+			const primaryHeader = headers[0] ?? "";
+			const baseline = resolveTimelineValues(entry, key, headers);
+			if (
+				headers.every((header) => String(values[header] ?? "") === String(baseline[header] ?? ""))
+			) {
+				return;
+			}
+
+			const payload = {
+				[`${key}Calendar`]: values,
+				[key]: primaryHeader ? String(values[primaryHeader] ?? "") : "",
+			};
+
+			const updatedEntry = deps.onUpdateEntryFromDetail(entry, payload);
+			if (!updatedEntry) {
+				deps.onSetFormStatus("日付の更新に失敗しました。");
+				return;
+			}
+
+			deps.onSetFormStatus("日付を更新しました。");
+			deps.onSetTopbarSaveStatus("未保存: エントリ更新あり");
+		}
+
+		/**
+		 * @param {string} value
+		 * @returns {string}
+		 */
+		function cssEscapeAttr(value) {
+			if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+				return CSS.escape(value);
+			}
+			return value.replace(/(["\\])/g, "\\$1");
 		}
 
 		return {

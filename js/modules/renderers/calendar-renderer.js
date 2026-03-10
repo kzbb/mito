@@ -119,6 +119,7 @@
 					selectedRowIndex = 0;
 					selectedColumnIndex = 0;
 					persistCalendar(data, gridToCsv(grid));
+					document.dispatchEvent(new CustomEvent("mito:data-changed"));
 					renderGrid();
 					deps.onSetFormStatus(`CSVを読み込みました: ${selectedFile.name}`);
 					deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -139,6 +140,7 @@
 				grid.splice(targetRow, 1);
 				selectedRowIndex = Math.max(0, Math.min(selectedRowIndex, grid.length - 1));
 				persistCalendar(data, gridToCsv(grid));
+				document.dispatchEvent(new CustomEvent("mito:data-changed"));
 				renderGrid();
 				deps.onSetFormStatus(`行${targetRow + 1}を削除しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -157,6 +159,7 @@
 				}
 				selectedColumnIndex = Math.max(0, Math.min(selectedColumnIndex, getGridWidth(grid) - 1));
 				persistCalendar(data, gridToCsv(grid));
+				document.dispatchEvent(new CustomEvent("mito:data-changed"));
 				renderGrid();
 				deps.onSetFormStatus(`列${resolveColumnLabel(targetColumn)}を削除しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -273,11 +276,11 @@
 						input.addEventListener("focus", () => {
 							selectedRowIndex = rowIndex;
 							selectedColumnIndex = colIndex;
-							renderGrid();
 						});
 						input.addEventListener("input", () => {
 							grid[rowIndex][colIndex] = input.value;
 							persistCalendar(data, gridToCsv(grid));
+							document.dispatchEvent(new CustomEvent("mito:data-changed"));
 							info.textContent = `${grid.length}行 x ${getGridWidth(grid)}列`;
 							deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 						});
@@ -325,6 +328,7 @@
 				grid.splice(targetRow, 0, Array.from({ length: width }, () => ""));
 				selectedRowIndex = targetRow;
 				persistCalendar(data, gridToCsv(grid));
+				document.dispatchEvent(new CustomEvent("mito:data-changed"));
 				renderGrid();
 				deps.onSetFormStatus(`行${targetRow + 1}に行を挿入しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -341,6 +345,7 @@
 				}
 				selectedColumnIndex = targetColumn;
 				persistCalendar(data, gridToCsv(grid));
+				document.dispatchEvent(new CustomEvent("mito:data-changed"));
 				renderGrid();
 				deps.onSetFormStatus(`列${resolveColumnLabel(targetColumn)}に列を挿入しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
