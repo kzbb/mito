@@ -62,14 +62,14 @@
 		}
 
 		/**
-		 * @returns {Promise<void>}
+		 * @returns {Promise<boolean>}
 		 */
 		async function saveCurrentData() {
 			const currentData = deps.getCurrentData();
 			if (!currentData) {
 				setFormStatus("保存するデータがありません。先に「開く」でJSONを読み込んでください。");
 				setTopbarSaveStatus("保存対象なし");
-				return;
+				return false;
 			}
 
 			const jsonText = JSON.stringify(currentData, null, 2);
@@ -86,7 +86,7 @@
 					deps.setCurrentFileName(handleName);
 					setFormStatus(`上書き保存しました: ${handleName}`);
 					setTopbarSaveStatus(`上書き保存: ${handleName}`);
-					return;
+					return true;
 				}
 
 				if (typeof windowAny.showSaveFilePicker === "function") {
@@ -107,21 +107,23 @@
 					deps.setCurrentFileName(handleName);
 					setFormStatus(`ファイルとして保存しました: ${handleName}`);
 					setTopbarSaveStatus(`保存: ${handleName}`);
-					return;
+					return true;
 				}
 
 				downloadJson(jsonText, suggestedName);
 				deps.setCurrentFileName(suggestedName);
 				setFormStatus(`保存しました: ${suggestedName}`);
 				setTopbarSaveStatus(`ダウンロード保存: ${suggestedName}`);
+				return true;
 			} catch (error) {
 				if (error && typeof error === "object" && "name" in error && error.name === "AbortError") {
-					return;
+					return false;
 				}
 
 				console.error("Failed to save JSON", error);
 				setFormStatus("保存に失敗しました。");
 				setTopbarSaveStatus("保存失敗");
+				return false;
 			}
 		}
 

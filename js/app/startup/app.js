@@ -39,6 +39,18 @@ let bridgeApi = null;
 /** @type {any | null} */
 let moduleInitializersApi = null;
 
+/** @type {boolean} */
+let isDirty = false;
+
+/** @type {number | null} */
+let autosaveTimerId = null;
+
+/** @type {boolean | null} */
+let nextDataChangeDirtyState = null;
+
+const AUTOSAVE_STORAGE_KEY = "mito:autosave:v1";
+const AUTOSAVE_DEBOUNCE_MS = 1200;
+
 /**
  * @typedef {{ type: "dashboard", data: any, button: HTMLButtonElement }} DashboardSelection
  * @typedef {{ type: "active", entry: any, button: HTMLButtonElement }} ActiveSelection
@@ -48,6 +60,32 @@ let moduleInitializersApi = null;
  */
 
 initializeModules();
+
+document.addEventListener("mito:data-changed", () => {
+	if (!currentData) {
+		return;
+	}
+
+	if (nextDataChangeDirtyState !== null) {
+		setDirty(nextDataChangeDirtyState);
+		nextDataChangeDirtyState = null;
+	} else {
+		setDirty(true);
+	}
+
+	if (isDirty) {
+		scheduleAutosave();
+	}
+});
+
+window.addEventListener("beforeunload", (event) => {
+	if (!isDirty) {
+		return;
+	}
+
+	event.preventDefault();
+	event.returnValue = "";
+});
 
 function initializeModules() {
 	const createAppModuleInitializers = /** @type {any} */ (window).createAppModuleInitializers;
@@ -122,6 +160,122 @@ function initializeModules() {
 }
 
 /**
+ * @param {boolean} nextDirty
+ */
+function setDirty(nextDirty) {
+	isDirty = Boolean(nextDirty);
+	if (!isDirty) {
+		setTopbarSaveStatus(`保存済み: ${currentFileName}`);
+		return;
+	}
+
+	setTopbarSaveStatus("未保存: 変更あり");
+}
+
+/**
+ * @param {boolean | null} nextDirty
+ */
+function queueNextDataChangeDirtyState(nextDirty) {
+	nextDataChangeDirtyState = nextDirty;
+}
+
+function scheduleAutosave() {
+	if (!currentData) {
+		return;
+	}
+
+	if (autosaveTimerId !== null) {
+		window.clearTimeout(autosaveTimerId);
+	}
+
+	autosaveTimerId = window.setTimeout(() => {
+		autosaveTimerId = null;
+		persistAutosaveSnapshot();
+	}, AUTOSAVE_DEBOUNCE_MS);
+}
+
+function persistAutosaveSnapshot() {
+	if (!currentData) {
+		return;
+	}
+
+	try {
+		const snapshot = {
+			fileName: currentFileName,
+			updatedAt: new Date().toISOString(),
+			data: currentData,
+		};
+		window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(snapshot));
+	} catch (error) {
+		console.error("Failed to persist autosave snapshot", error);
+	}
+}
+
+function clearAutosaveSnapshot() {
+	try {
+		window.localStorage.removeItem(AUTOSAVE_STORAGE_KEY);
+	} catch (error) {
+		console.error("Failed to clear autosave snapshot", error);
+	}
+}
+
+/**
+ * @param {string} actionLabel
+ */
+function requestDiscardUnsavedChanges(actionLabel) {
+	if (!isDirty || !currentData) {
+		return true;
+	}
+
+	return window.confirm(`未保存の変更があります。${actionLabel}を続行しますか？`);
+}
+
+function tryRestoreAutosaveSnapshot() {
+	let rawSnapshot = "";
+	try {
+		rawSnapshot = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY) ?? "";
+	} catch (error) {
+		console.error("Failed to read autosave snapshot", error);
+		return;
+	}
+
+	if (!rawSnapshot) {
+		return;
+	}
+
+	/** @type {{ fileName?: string, updatedAt?: string, data?: any } | null} */
+	let snapshot = null;
+	try {
+		snapshot = JSON.parse(rawSnapshot);
+	} catch (error) {
+		console.error("Failed to parse autosave snapshot", error);
+		clearAutosaveSnapshot();
+		return;
+	}
+
+	if (!snapshot || typeof snapshot !== "object" || !snapshot.data || typeof snapshot.data !== "object") {
+		clearAutosaveSnapshot();
+		return;
+	}
+
+	const updatedAt = typeof snapshot.updatedAt === "string" ? snapshot.updatedAt : "不明";
+	const shouldRestore = window.confirm(`未保存の下書きが見つかりました（${updatedAt}）。復元しますか？`);
+	if (!shouldRestore) {
+		return;
+	}
+
+	currentFileHandle = null;
+	currentFileName = typeof snapshot.fileName === "string" && snapshot.fileName.length > 0
+		? snapshot.fileName
+		: "recovered.json";
+	queueNextDataChangeDirtyState(true);
+	renderOutlineFromData(snapshot.data);
+	setFormStatus("下書きデータを復元しました。保存して確定してください。");
+	setTopbarSaveStatus("未保存: 復元データ");
+	setDirty(true);
+}
+
+/**
  * Render project outline from loaded JSON into the left panel.
  * @param {any} data
  */
@@ -157,8 +311,17 @@ function renderFileLoadError(message) {
  * @returns {Promise<void>}
  */
 async function handleOpenFile(file) {
+	if (!requestDiscardUnsavedChanges("別ファイルを開く操作")) {
+		setFormStatus("ファイルを開く操作をキャンセルしました。");
+		return;
+	}
+
 	if (documentActionsApi && typeof documentActionsApi.handleOpenFile === "function") {
-		await documentActionsApi.handleOpenFile(file);
+		queueNextDataChangeDirtyState(false);
+		const opened = await documentActionsApi.handleOpenFile(file);
+		if (!opened) {
+			queueNextDataChangeDirtyState(null);
+		}
 	}
 }
 
@@ -166,8 +329,19 @@ async function handleOpenFile(file) {
  * Create a new document and render it.
  */
 function handleNewFile() {
+	if (!requestDiscardUnsavedChanges("新規作成")) {
+		setFormStatus("新規作成をキャンセルしました。");
+		return;
+	}
+
 	if (documentActionsApi && typeof documentActionsApi.handleNewFile === "function") {
-		documentActionsApi.handleNewFile();
+		queueNextDataChangeDirtyState(true);
+		const created = documentActionsApi.handleNewFile();
+		if (!created) {
+			queueNextDataChangeDirtyState(null);
+			return;
+		}
+		setDirty(true);
 	}
 }
 
@@ -177,7 +351,11 @@ function handleNewFile() {
  */
 async function saveCurrentData() {
 	if (persistenceApi && typeof persistenceApi.saveCurrentData === "function") {
-		await persistenceApi.saveCurrentData();
+		const saved = await persistenceApi.saveCurrentData();
+		if (saved) {
+			setDirty(false);
+			clearAutosaveSnapshot();
+		}
 	}
 }
 
@@ -222,3 +400,4 @@ if (typeof fileActionSetup === "function") {
 renderWaitingForFile();
 bridgeApi?.setupEntryForm?.();
 setTopbarSaveStatus("未保存");
+tryRestoreAutosaveSnapshot();
