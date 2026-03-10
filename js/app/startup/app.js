@@ -36,6 +36,9 @@ let outlineViewApi = null;
 /** @type {any | null} */
 let bridgeApi = null;
 
+/** @type {any | null} */
+let moduleInitializersApi = null;
+
 /**
  * @typedef {{ type: "dashboard", data: any, button: HTMLButtonElement }} DashboardSelection
  * @typedef {{ type: "active", entry: any, button: HTMLButtonElement }} ActiveSelection
@@ -44,133 +47,68 @@ let bridgeApi = null;
  * @typedef {DashboardSelection | ActiveSelection | SettingSelection | ArchivedSelection} SidebarSelection
  */
 
-initializeBridgeModule();
-initializeRenderers();
-initializeTreeRenderer();
-initializeEntryFormModule();
-initializeDataModel();
-initializePersistenceModule();
-initializeOutlineViewModule();
-initializeDocumentActionsModule();
+initializeModules();
 
-/**
- * Initialize tree/renderer/model/form bridge helpers from external module.
- */
-function initializeBridgeModule() {
-	const createAppBridge = /** @type {any} */ (window).createAppBridge;
-	if (typeof createAppBridge !== "function") {
+function initializeModules() {
+	const createAppModuleInitializers = /** @type {any} */ (window).createAppModuleInitializers;
+	if (typeof createAppModuleInitializers !== "function") {
 		return;
 	}
 
-	bridgeApi = createAppBridge({
-		getRendererApi: () => rendererApi,
-		getTreeApi: () => treeApi,
-		getFormApi: () => formApi,
-		getModelApi: () => modelApi,
+	moduleInitializersApi = createAppModuleInitializers({
 		getCurrentData: () => currentData,
-	});
-}
-
-/**
- * Initialize pure data helpers from external module.
- */
-function initializeDataModel() {
-	const createDataModel = /** @type {any} */ (window).createDataModel;
-	if (typeof createDataModel !== "function") {
-		return;
-	}
-
-	modelApi = createDataModel();
-}
-
-/**
- * Initialize persistence helpers from external module.
- */
-function initializePersistenceModule() {
-	const createPersistenceModule = /** @type {any} */ (window).createPersistenceModule;
-	if (typeof createPersistenceModule !== "function") {
-		return;
-	}
-
-	persistenceApi = createPersistenceModule({
-		getCurrentData: () => currentData,
-		getCurrentFileName: () => currentFileName,
-		getCurrentFileHandle: () => currentFileHandle,
-		setCurrentFileName: (/** @type {string} */ fileName) => {
-			currentFileName = fileName;
-		},
-		setCurrentFileHandle: (/** @type {any | null} */ fileHandle) => {
-			currentFileHandle = fileHandle;
-		},
-	});
-}
-
-/**
- * Initialize outline rendering helpers from external module.
- */
-function initializeOutlineViewModule() {
-	const createAppOutlineView = /** @type {any} */ (window).createAppOutlineView;
-	if (typeof createAppOutlineView !== "function") {
-		return;
-	}
-
-	outlineViewApi = createAppOutlineView({
-		getEditingEntryId: () => editingEntryId,
-		normalizeSettingsKeys: (/** @type {any} */ data) => {
-			normalizeSettingsKeys(data);
-		},
-		resolveProjectName: (/** @type {any} */ data) => bridgeApi?.resolveProjectName?.(data) ?? (typeof data?.project === "string" ? data.project : "プロジェクト"),
-		groupActiveEntriesByCategory: (/** @type {any} */ data) => bridgeApi?.groupActiveEntriesByCategory?.(data) ?? new Map(),
-		captureOpenCategories: (/** @type {HTMLElement} */ treeElement) => bridgeApi?.captureOpenCategories?.(treeElement) ?? null,
-		renderDashboardItem: (/** @type {HTMLElement} */ treeElement, /** @type {any} */ data, /** @type {(item: any, button: HTMLButtonElement) => void} */ onSelect) => bridgeApi?.renderDashboardItem?.(treeElement, data, onSelect) ?? null,
-		selectTreeLeaf: (/** @type {HTMLElement} */ treeElement, /** @type {HTMLButtonElement} */ button) => {
-			bridgeApi?.selectTreeLeaf?.(treeElement, button);
-		},
-		renderDashboardOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-			bridgeApi?.renderDashboardOverview?.(mainElement, data);
-		},
-		renderCategoryTree: (/** @type {HTMLElement} */ treeElement, /** @type {Map<string, any[]>} */ grouped, /** @type {(entry: any, button: HTMLButtonElement) => void} */ onEntrySelect, /** @type {Set<string> | null} */ openCategories) => bridgeApi?.renderCategoryTree?.(treeElement, grouped, onEntrySelect, openCategories) ?? null,
-		renderEntryDetail: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ entry) => {
-			bridgeApi?.renderEntryDetail?.(mainElement, entry);
-		},
-		renderSettingsButton: (/** @type {any} */ data, /** @type {(item: any) => void} */ onSelect) => bridgeApi?.renderSettingsButton?.(data, onSelect) ?? null,
-		clearTreeSelection: (/** @type {HTMLElement} */ treeElement) => {
-			bridgeApi?.clearTreeSelection?.(treeElement);
-		},
-		renderSettingsOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-			bridgeApi?.renderSettingsOverview?.(mainElement, data);
-		},
-		setTreeMessage: (/** @type {HTMLElement} */ treeElement, /** @type {string} */ message) => {
-			bridgeApi?.setTreeMessage?.(treeElement, message);
-		},
-		renderMainMessage: (/** @type {HTMLElement} */ mainElement, /** @type {string} */ message) => {
-			bridgeApi?.renderMainMessage?.(mainElement, message);
-		},
-		findActiveEntryById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => bridgeApi?.findActiveEntryById?.(data, entryId) ?? null,
-		setFormModeAdd: () => {
-			bridgeApi?.setFormModeAdd?.();
-		},
 		setCurrentData: (/** @type {any} */ data) => {
 			currentData = data;
 		},
-	});
-}
-
-/**
- * Initialize open/new/template helpers from external module.
- */
-function initializeDocumentActionsModule() {
-	const createAppDocumentActions = /** @type {any} */ (window).createAppDocumentActions;
-	if (typeof createAppDocumentActions !== "function") {
-		return;
-	}
-
-	documentActionsApi = createAppDocumentActions({
+		getEditingEntryId: () => editingEntryId,
+		setEditingEntryId: (/** @type {string | null} */ entryId) => {
+			editingEntryId = entryId;
+		},
+		getCurrentFileName: () => currentFileName,
+		setCurrentFileName: (/** @type {string} */ fileName) => {
+			currentFileName = fileName;
+		},
+		getCurrentFileHandle: () => currentFileHandle,
+		setCurrentFileHandle: (/** @type {any | null} */ fileHandle) => {
+			currentFileHandle = fileHandle;
+		},
+		getRendererApi: () => rendererApi,
+		setRendererApi: (/** @type {any | null} */ api) => {
+			rendererApi = api;
+		},
+		getTreeApi: () => treeApi,
+		setTreeApi: (/** @type {any | null} */ api) => {
+			treeApi = api;
+		},
+		getFormApi: () => formApi,
+		setFormApi: (/** @type {any | null} */ api) => {
+			formApi = api;
+		},
+		getModelApi: () => modelApi,
+		setModelApi: (/** @type {any | null} */ api) => {
+			modelApi = api;
+		},
+		getPersistenceApi: () => persistenceApi,
+		setPersistenceApi: (/** @type {any | null} */ api) => {
+			persistenceApi = api;
+		},
+		getDocumentActionsApi: () => documentActionsApi,
+		setDocumentActionsApi: (/** @type {any | null} */ api) => {
+			documentActionsApi = api;
+		},
+		getOutlineViewApi: () => outlineViewApi,
+		setOutlineViewApi: (/** @type {any | null} */ api) => {
+			outlineViewApi = api;
+		},
+		getBridgeApi: () => bridgeApi,
+		setBridgeApi: (/** @type {any | null} */ api) => {
+			bridgeApi = api;
+		},
+		normalizeSettingsKeys: (/** @type {any} */ data) => {
+			normalizeSettingsKeys(data);
+		},
 		renderOutlineFromData: (/** @type {any} */ data) => {
 			renderOutlineFromData(data);
-		},
-		setFormModeAdd: () => {
-			bridgeApi?.setFormModeAdd?.();
 		},
 		setFormStatus: (/** @type {string} */ message) => {
 			setFormStatus(message);
@@ -178,136 +116,12 @@ function initializeDocumentActionsModule() {
 		setTopbarSaveStatus: (/** @type {string} */ message) => {
 			setTopbarSaveStatus(message);
 		},
-		setCurrentFileName: (/** @type {string} */ fileName) => {
-			currentFileName = fileName;
-		},
-		setCurrentFileHandle: (/** @type {any | null} */ fileHandle) => {
-			currentFileHandle = fileHandle;
-		},
 		renderFileLoadError: (/** @type {string} */ message) => {
 			renderFileLoadError(message);
 		},
 	});
-}
 
-/**
- * Initialize rendering helpers from external module.
- */
-function initializeRenderers() {
-	const createRendererComposer = /** @type {any} */ (window).createRendererComposer;
-	if (typeof createRendererComposer !== "function") {
-		return;
-	}
-
-	rendererApi = createRendererComposer({
-		getCurrentData: () => currentData,
-		onEnterEditMode: (/** @type {any} */ entry) => {
-			bridgeApi?.enterEditMode?.(entry);
-		},
-		onUpdateEntryFromDetail: (/** @type {any} */ entry, /** @type {Record<string, string>} */ payload) => {
-			if (!currentData) {
-				return null;
-			}
-
-			const entryId = String(entry?.id ?? "");
-			const targetIndex = bridgeApi?.findActiveEntryIndexById?.(currentData, entryId) ?? -1;
-			if (targetIndex < 0) {
-				return null;
-			}
-
-			const updatedEntry = { ...currentData.active[targetIndex], ...payload };
-			currentData.active[targetIndex] = updatedEntry;
-			renderOutlineFromData(currentData);
-			bridgeApi?.focusNewEntryInTree?.(updatedEntry);
-
-			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
-			if (mainElement) {
-				bridgeApi?.renderEntryDetail?.(mainElement, updatedEntry);
-			}
-
-				// Keep left form independent unless it is already editing this exact entry.
-			if (editingEntryId && editingEntryId === entryId) {
-				bridgeApi?.enterEditMode?.(updatedEntry);
-			}
-
-			return updatedEntry;
-		},
-		onSetFormStatus: (/** @type {string} */ message) => {
-			setFormStatus(message);
-		},
-		onSetTopbarSaveStatus: (/** @type {string} */ message) => {
-			setTopbarSaveStatus(message);
-		},
-		onProjectNameInput: (/** @type {string} */ nextProject) => {
-			if (!currentData || typeof currentData !== "object") {
-				return;
-			}
-
-			currentData.project = nextProject;
-			bridgeApi?.updateOutlineProjectName?.(nextProject);
-		},
-		onOpenCalendarEditor: () => {
-			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
-			if (!mainElement || !currentData) {
-				return;
-			}
-
-			if (rendererApi && typeof rendererApi.renderCalendarEditor === "function") {
-				rendererApi.renderCalendarEditor(mainElement, currentData);
-			}
-		},
-	});
-}
-
-/**
- * Initialize tree rendering helpers from external module.
- */
-function initializeTreeRenderer() {
-	const createTreeRenderer = /** @type {any} */ (window).createTreeRenderer;
-	if (typeof createTreeRenderer !== "function") {
-		return;
-	}
-
-	treeApi = createTreeRenderer({
-		resolveEntryName: (/** @type {any} */ entry) => bridgeApi?.resolveEntryName?.(entry) ?? `項目${entry?.id ?? ""}`,
-		resolveDashboardLabel: (/** @type {any} */ data) => bridgeApi?.resolveDashboardLabel?.(data) ?? "ダッシュボード",
-	});
-}
-
-/**
- * Initialize entry form helpers from external module.
- */
-function initializeEntryFormModule() {
-	const createEntryFormModule = /** @type {any} */ (window).createEntryFormModule;
-	if (typeof createEntryFormModule !== "function") {
-		return;
-	}
-
-	formApi = createEntryFormModule({
-		getCurrentData: () => currentData,
-		getEditingEntryId: () => editingEntryId,
-		setEditingEntryId: (/** @type {string | null} */ entryId) => {
-			editingEntryId = entryId;
-		},
-		resolveDashboardLabel: (/** @type {any} */ data) => bridgeApi?.resolveDashboardLabel?.(data) ?? "ダッシュボード",
-		setFormStatus: (/** @type {string} */ message) => {
-			setFormStatus(message);
-		},
-		findActiveEntryIndexById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => bridgeApi?.findActiveEntryIndexById?.(data, entryId) ?? -1,
-		getNextActiveId: (/** @type {any} */ data) => bridgeApi?.getNextActiveId?.(data) ?? 1,
-		renderOutlineFromData: (/** @type {any} */ data) => {
-			renderOutlineFromData(data);
-		},
-		renderDashboardOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-			bridgeApi?.renderDashboardOverview?.(mainElement, data);
-		},
-		focusNewEntryInTree: (/** @type {any} */ entry) => {
-			bridgeApi?.focusNewEntryInTree?.(entry);
-		},
-		renderEntryDetail: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ entry) => {
-			bridgeApi?.renderEntryDetail?.(mainElement, entry);
-		},
-	});
+	moduleInitializersApi?.initializeAllModules?.();
 }
 
 /**
