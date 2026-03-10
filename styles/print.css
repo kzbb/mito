@@ -1,0 +1,70 @@
+@media print {
+	@page {
+		margin: 12mm;
+	}
+
+	body {
+		margin: 0;
+		background: #ffffff;
+		overflow: visible;
+	}
+
+	.topbar,
+	.footer,
+	.left-window,
+	.splitter,
+	.left-pane-splitter,
+	#outline-settings,
+	.dashboard-link-preview {
+		display: none !important;
+	}
+
+	.app-layout {
+		min-width: 0;
+		height: auto;
+		min-height: 0;
+		display: block;
+		overflow: visible;
+	}
+
+	.columns {
+		display: block;
+		min-height: 0;
+		background: #ffffff;
+	}
+
+	.main-window,
+	.main-window.dashboard-view {
+		overflow: visible;
+		height: auto;
+		min-height: 0;
+		border: 0;
+		padding: 0;
+		background: #ffffff;
+	}
+
+	.dashboard-table-wrap,
+	.calendar-grid-wrap {
+		overflow: visible;
+		height: auto;
+		min-height: 0;
+	}
+
+	.dashboard-table thead th {
+		position: static;
+	}
+
+	.dashboard-card,
+	.dashboard-entry-card,
+	.entry-wiki,
+	.calendar-toolbar,
+	.calendar-grid-wrap {
+		break-inside: avoid;
+		page-break-inside: avoid;
+	}
+
+	a[href] {
+		text-decoration: none;
+		color: inherit;
+	}
+}
