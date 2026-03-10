@@ -28,12 +28,14 @@
 		 * @param {any} data
 		 */
 		function populateCategoryOptions(data) {
-			const select = /** @type {HTMLSelectElement | null} */ (document.getElementById("category-select"));
-			if (!select) {
+			const categoryInput = /** @type {HTMLInputElement | null} */ (document.getElementById("category-select"));
+			const suggestionList = /** @type {HTMLDataListElement | null} */ (document.getElementById("category-suggestions"));
+			const suggestionChipList = /** @type {HTMLElement | null} */ (document.getElementById("category-suggestion-list"));
+			if (!categoryInput || !suggestionList) {
 				return;
 			}
 
-			const selectedBeforeUpdate = select.value;
+			const selectedBeforeUpdate = categoryInput.value;
 
 			const categories = new Set();
 			const activeEntries = Array.isArray(data?.active) ? data.active : [];
@@ -49,24 +51,35 @@
 				}
 			}
 
-			select.innerHTML = "";
-			const placeholder = document.createElement("option");
-			placeholder.value = "";
-			placeholder.textContent = "カテゴリを選択";
-			select.appendChild(placeholder);
+			suggestionList.innerHTML = "";
+			if (suggestionChipList) {
+				suggestionChipList.innerHTML = "";
+			}
 
 			for (const category of Array.from(categories).sort((a, b) => a.localeCompare(b, "ja"))) {
 				const option = document.createElement("option");
 				option.value = category;
-				option.textContent = category;
-				select.appendChild(option);
+				suggestionList.appendChild(option);
+
+				if (suggestionChipList) {
+					const chip = document.createElement("button");
+					chip.type = "button";
+					chip.className = "category-suggestion-chip";
+					chip.textContent = category;
+					chip.addEventListener("click", () => {
+						categoryInput.value = category;
+						categoryInput.dispatchEvent(new Event("input", { bubbles: true }));
+						categoryInput.focus();
+					});
+					suggestionChipList.appendChild(chip);
+				}
 			}
 
-			if (selectedBeforeUpdate && categories.has(selectedBeforeUpdate)) {
-				select.value = selectedBeforeUpdate;
-			} else {
-				select.value = "";
+			if (suggestionChipList) {
+				suggestionChipList.hidden = suggestionChipList.childElementCount === 0;
 			}
+
+			categoryInput.value = selectedBeforeUpdate;
 		}
 
 		/**

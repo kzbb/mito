@@ -42,9 +42,9 @@
                     <form id="entry-form" class="entry-form">
                         <label class="form-field">
                             <span>カテゴリ</span>
-                            <select id="category-select" name="category" required>
-                                <option value="">カテゴリを選択</option>
-                            </select>
+                            <input id="category-select" name="category" list="category-suggestions" placeholder="カテゴリを入力" required>
+                            <datalist id="category-suggestions"></datalist>
+                            <div id="category-suggestion-list" class="category-suggestion-list" aria-label="カテゴリ候補"></div>
                         </label>
 
                         <label class="form-field">
