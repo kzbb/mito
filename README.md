@@ -1,13 +1,44 @@
 # MITO
 
-## ファイル構成（階層）
+MITOは、JSONドキュメントを読み込み・編集・保存する、ブラウザ上で動く年表/ナレッジ整理ツールです。
+
+## 現在の主な機能
+
+- JSONファイルの新規作成・読み込み・保存
+- `Ctrl+S` / `Cmd+S` で保存
+- 未保存変更の検知と、画面離脱時の警告
+- ローカルストレージへの自動下書き保存（デバウンス付き）と復元
+- 左ペインのカテゴリツリー + ダッシュボード + 設定の切り替え
+- エントリー詳細表示と、詳細画面からの削除済み移動
+- 設定画面でのプロジェクト設定編集（`project`, `settings.*`）
+- 削除済みエントリーの復元 / 完全削除
+- カレンダーCSVの編集（セル編集、行列追加/削除、CSV入出力）
+- 説明欄Markdown表示
+- 内部リンク / `file:`リンク / `https:`リンクの解決
+- リンクホバー・フォーカス時のプレビュー表示
+
+## 実行方法
+
+ビルド不要の静的構成です。
+
+1. `index.html` をブラウザで開く
+2. 画面上部の `新規作成` または `開く` で開始
+
+補足:
+
+- 一部機能（`showSaveFilePicker` / `showDirectoryPicker`）は対応ブラウザで有効になります。
+- 未対応環境では保存時にダウンロード方式へフォールバックします。
+
+## ファイル構成（現状）
 
 ```text
 .
 |- index.html
+|- README.md
 |- style.css
 |- styles/
 |  |- base.css
+|  |- calendar.css
 |  |- dashboard.css
 |  |- form.css
 |  |- layout-controls.css
@@ -20,96 +51,124 @@
 |  |- tree.css
 |  `- wiki.css
 `- js/
-	|- app/
-	|  |- actions/
-	|  |  |- app-document-actions.js
-	|  |  `- app-file-actions.js
-	|  |- core/
-	|  |  |- app-bridge.js
-	|  |  `- app-outline-view.js
-	|  |- startup/
-	|  |  `- app.js
-	|  `- ui/
-	|     `- app-layout.js
-	`- modules/
-		|- data/
-		|  |- data-model.js
-		|  `- persistence.js
-		|- forms/
-		|  `- entry-form.js
-		`- renderers/
-			|- dashboard-renderer.js
-			|- entry-detail-renderer.js
-			|- renderer-composer.js
-			|- settings-renderer.js
-			`- tree-renderer.js
+   |- app/
+   |  |- actions/
+   |  |  |- app-document-actions.js
+   |  |  `- app-file-actions.js
+   |  |- core/
+   |  |  |- app-bridge.js
+   |  |  `- app-outline-view.js
+   |  |- startup/
+   |  |  |- app-module-initializers.js
+   |  |  `- app.js
+   |  `- ui/
+   |     `- app-layout.js
+   `- modules/
+      |- data/
+      |  |- data-model.js
+      |  `- persistence.js
+      |- forms/
+      |  `- entry-form.js
+      `- renderers/
+         |- calendar-renderer.js
+         |- calendar-utils.js
+         |- dashboard-renderer.js
+         |- entry-detail-renderer.js
+         |- link-preview-handler.js
+         |- markdown-engine.js
+         |- renderer-composer.js
+         |- renderer-fallbacks.js
+         |- settings-renderer.js
+         `- tree-renderer.js
 ```
-
-## ディレクトリ役割
-
-- `js/app/startup/`: 起動処理
-- `js/app/core/`: app層の中核配線
-- `js/app/actions/`: ファイル操作系のイベント配線
-- `js/app/ui/`: app層のUI操作（レイアウト）
-- `js/modules/renderers/`: 描画モジュール群
-- `js/modules/forms/`: フォーム制御
-- `js/modules/data/`: データ操作と保存処理
 
 ## レイヤー方針
 
-- `app` 層: 画面全体で「いつ・どれを呼ぶか」を決める
-- `modules` 層: 単一責務で「何をするか」を実装する
+- `js/app/*`: 画面全体の配線・起動順序・モジュール連携
+- `js/modules/*`: 単一責務の実装（描画、フォーム、データ、保存）
 
-## 主要ファイル
+## 主要モジュール
 
-- `js/app/startup/app.js`: 起動エントリ。各モジュールの初期化と全体配線。
-- `js/app/core/app-bridge.js`: renderer/tree/model/formへの橋渡しAPI。
-- `js/app/core/app-outline-view.js`: 左ツリー描画と待機/エラー表示の制御。
-- `js/app/actions/app-document-actions.js`: 新規作成・開く・テンプレート生成・設定キー正規化。
-- `js/app/actions/app-file-actions.js`: topbarの新規/開く/保存のUIイベント配線。
-- `js/app/ui/app-layout.js`: 左右/上下スプリッターなどのレイアウト操作。
-- `js/modules/renderers/renderer-composer.js`: 各rendererを束ねるオーケストレーター。
-- `js/modules/forms/entry-form.js`: 左下入力フォームの追加/更新モード制御。
-- `js/modules/data/data-model.js`: ID採番、検索、グルーピングなどのデータ操作。
-- `js/modules/data/persistence.js`: 保存処理、保存ステータス更新。
+- `js/app/startup/app.js`
+  - アプリの状態管理
+  - `mito:data-changed` 監視
+  - オートセーブ/復元
+  - ファイル操作イベント接続
+- `js/app/startup/app-module-initializers.js`
+  - 各モジュールの生成と依存注入
+  - ファイルリンク解決・プレビュー補助
+- `js/app/actions/app-document-actions.js`
+  - 新規テンプレート作成
+  - 読み込みJSONの正規化
+- `js/modules/data/persistence.js`
+  - 保存処理（File System Access API + フォールバック）
+- `js/modules/renderers/renderer-composer.js`
+  - 詳細/設定/ダッシュボード/カレンダー描画の統合
+- `js/modules/renderers/calendar-renderer.js`
+  - カレンダー編集UIとCSV入出力
+- `js/modules/renderers/settings-renderer.js`
+  - 設定画面と削除済み一覧管理
+- `js/modules/renderers/link-preview-handler.js`
+  - リンクプレビューの表示・非表示・位置調整
+- `js/modules/renderers/markdown-engine.js`
+  - 説明欄MarkdownのHTML変換
 
-## 命名ルール
+## データ形式
 
-- app層は `app-*.js` を基本とし、起動エントリのみ `app.js` を使う。
-- 機能モジュールは責務名ベースで命名する。
+読み込み時に以下構造へ正規化されます。
 
-## 変更ルール
+```json
+{
+  "project": "プロジェクト名",
+  "generatedAt": "2026-03-10T00:00:00.000Z",
+  "updatedAt": "2026-03-10T00:00:00.000Z",
+  "version": 1,
+  "calendar": { "csvText": "..." },
+  "settings": {
+    "focusCategory": "出来事",
+    "dashboardLabel": "年表"
+  },
+  "active": [
+    {
+      "id": 1,
+      "category": "出来事",
+      "name": "項目名",
+      "description": "Markdown本文"
+    }
+  ],
+  "deleted": []
+}
+```
 
-- 新しいコードを追加するときは、先に層を決めてから配置する。
-- app層にロジックが増えすぎたら、modules層へ分離する。
-- モジュール間の接続だけをする処理はapp層へ寄せる。
+## 説明欄Markdown仕様
 
-## 説明欄Markdown（現時点）
+対象:
 
-- 対象範囲: 左下のデータ入力フォーム「説明」→ ダッシュボードのカード説明表示。
-- データ保存: 入力値はMarkdownテキストのまま保存され、ダッシュボード描画時にHTMLへ変換される。
+- 入力フォームの `説明`
+- ダッシュボードや詳細表示での本文レンダリング
 
-有効な記法:
+対応記法:
 
 - 見出し: `#` 〜 `######`
 - 箇条書き: `- item` / `* item`
-- 番号付きリスト: `1. item`（自動連番。`1.`を続けて書いても連番表示される。`3.`開始も可）
+- 番号付きリスト: `1. item`（開始番号保持）
 - 引用: `> quote`
-- リンク（Wikipedia準拠）:
-	- 内部リンク形式: `[[ページ名]]` / `[[ページ名|表示名]]`（MITO内部で同名エントリーの個別表示へジャンプ）
-	- ローカルファイルリンク（相対）: `[file:docs/memo.md メモ]`
-	- 相対リンク初回クリック時、基準フォルダー選択ダイアログが開く（以後は同フォルダー基準で解決）
-	- 絶対パスも可: `[file:/Users/you/path/to/file.md 表示名]`
-	- `file://` を直接指定する場合: `[file:file:///Users/you/path/to/file.md 表示名]`
-	- 外部リンク形式: `[https://example.com 表示名]`
 - 太字: `**text**`
 - 斜体: `*text*`
 - インラインコード: `` `code` ``
-- コードブロック: `` ``` `` で囲む
-- 段落: 空行で段落分割
-- 改行: 普通の改行をそのまま反映（内部的には `<br>` に変換）
+- コードブロック: `` ``` ``
+- 段落: 空行で分割
+- 通常改行: `<br>` として反映
+
+リンク記法:
+
+- 内部リンク: `[[ページ名]]` / `[[ページ名|表示名]]`
+- ファイルリンク: `[file:docs/memo.md メモ]`
+- 絶対ファイルパス: `[file:/Users/you/path/to/file.md 表示名]`
+- `file://` 形式: `[file:file:///Users/you/path/to/file.md 表示名]`
+- 外部リンク: `[https://example.com 表示名]`
 
 補足:
 
-- HTMLはエスケープされるため、説明欄に直接HTMLタグを書いてもそのまま文字列として扱われる。
-- 個別エントリー画面側のMarkdown表示は未対応（別途対応予定）。
+- 相対`file:`リンク初回クリック時は、基準フォルダ選択を要求します。
+- HTMLはエスケープされるため、本文中のHTMLタグはそのまま文字列として扱われます。
