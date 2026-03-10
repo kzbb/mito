@@ -133,12 +133,12 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
       "id": 1,
       "category": "出来事",
       "name": "項目名",
-      "dashboardOrder": 0,
       "dateCalendar": {
         "列ヘッダ1": "値1",
         "列ヘッダ2": "値2"
       },
-      "description": "Markdown本文"
+      "description": "Markdown本文",
+	  "dashboardOrder": 0
     }
   ],
   "deleted": []
