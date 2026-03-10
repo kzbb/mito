@@ -19,17 +19,22 @@
 	function createEntryFormModule(deps) {
 		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
 		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
-		const resolveCalendarSchema = calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
+		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
+		const rendererFallbacks = typeof createRendererFallbacks === "function"
+			? createRendererFallbacks()
+			: null;
+		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] })));
 		const findCalendarRowByValue = calendarUtils?.findCalendarRowByValue ?? (() => null);
-		const resolveTimelineValues = calendarUtils?.resolveTimelineValues
-			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-				/** @type {Record<string, string>} */
-				const values = {};
-				for (const header of headers) {
-					values[header] = "";
-				}
-				return values;
-			});
+		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
+			?? (calendarUtils?.resolveTimelineValues
+				?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
+					/** @type {Record<string, string>} */
+					const values = {};
+					for (const header of headers) {
+						values[header] = "";
+					}
+					return values;
+				}));
 
 		/** @type {((entry: any | null) => void) | null} */
 		let syncDateInputs = null;
