@@ -15,6 +15,8 @@
 	function createDashboardRenderer(deps) {
 		/** @type {ResizeObserver | null} */
 		let bucketResizeObserver = null;
+		/** @type {{ top: number, left: number }} */
+		let lastTableScrollPosition = { top: 0, left: 0 };
 		const CRAMPED_THRESHOLD_REM = 17;
 
 		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
@@ -81,6 +83,7 @@
 		 * @param {any} data
 		 */
 		function renderDashboardOverview(mainElement, data) {
+			captureTableScrollPosition(mainElement);
 			teardownBucketObserver();
 			linkPreviewHandler?.hide();
 
@@ -147,10 +150,34 @@
 
 			const tableWrap = createDashboardTable(schema, categoryColumns, startRowIndex, endRowIndex);
 			mainElement.appendChild(tableWrap);
+			restoreTableScrollPosition(tableWrap);
 			setupBucketObserver(tableWrap);
 			window.requestAnimationFrame(() => {
 				refreshEntryBucketLayouts(tableWrap);
 			});
+		}
+
+		/**
+		 * @param {HTMLElement} mainElement
+		 */
+		function captureTableScrollPosition(mainElement) {
+			const existingWrap = /** @type {HTMLElement | null} */ (mainElement.querySelector(".dashboard-table-wrap"));
+			if (!existingWrap) {
+				return;
+			}
+
+			lastTableScrollPosition = {
+				top: existingWrap.scrollTop,
+				left: existingWrap.scrollLeft,
+			};
+		}
+
+		/**
+		 * @param {HTMLElement} tableWrap
+		 */
+		function restoreTableScrollPosition(tableWrap) {
+			tableWrap.scrollTop = Math.max(0, lastTableScrollPosition.top);
+			tableWrap.scrollLeft = Math.max(0, lastTableScrollPosition.left);
 		}
 
 		/**
@@ -272,6 +299,7 @@
 		function createEntryCard(entry) {
 			const card = document.createElement("div");
 			card.className = "dashboard-entry-card";
+			card.dataset.entryId = String(entry?.id ?? "");
 			card.tabIndex = 0;
 			card.setAttribute("role", "button");
 			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集、ダブルクリックで個別表示）`);
@@ -483,10 +511,27 @@
 			}
 
 			for (const bucket of rowMap.values()) {
-				bucket.sort((left, right) => deps.resolveEntryName(left).localeCompare(deps.resolveEntryName(right), "ja"));
+				bucket.sort((left, right) => {
+					const leftOrder = resolveDashboardOrder(left);
+					const rightOrder = resolveDashboardOrder(right);
+					if (leftOrder !== rightOrder) {
+						return leftOrder - rightOrder;
+					}
+
+					return deps.resolveEntryName(left).localeCompare(deps.resolveEntryName(right), "ja");
+				});
 			}
 
 			return rowMap;
+		}
+
+		/**
+		 * @param {any} entry
+		 * @returns {number}
+		 */
+		function resolveDashboardOrder(entry) {
+			const parsed = Number.parseInt(String(entry?.dashboardOrder ?? ""), 10);
+			return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 		}
 
 		/**

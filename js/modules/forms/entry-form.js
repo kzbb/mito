@@ -126,9 +126,11 @@
 				const wasDashboardView = currentTitle === dashboardLabel;
 
 				const timelinePayload = buildTimelinePayload(formElement);
+				const dashboardOrder = readDashboardOrder(formElement);
 				const entryPayload = {
 					category,
 					name,
+					dashboardOrder,
 					description: readTrimmedFormValue(formData, "description"),
 					...timelinePayload,
 				};
@@ -195,9 +197,11 @@
 			}
 
 			const timelinePayload = buildTimelinePayload(formElement);
+			const dashboardOrder = readDashboardOrder(formElement);
 			const nextPayload = {
 				category: nextCategory,
 				name: nextName,
+				dashboardOrder,
 				description: descriptionInput.value.trim(),
 				...timelinePayload,
 			};
@@ -224,7 +228,12 @@
 			const currentTitle = mainElement.querySelector("h2")?.textContent?.trim() ?? "";
 			const dashboardLabel = deps.resolveDashboardLabel(currentData);
 			if (currentTitle === dashboardLabel) {
+				const previousScrollTop = mainElement.scrollTop;
 				deps.renderDashboardOverview(mainElement, currentData);
+				mainElement.scrollTop = previousScrollTop;
+				window.requestAnimationFrame(() => {
+					keepEntryCardInView(mainElement, nextEntry);
+				});
 			} else if (wasDetailView) {
 				deps.renderEntryDetail(mainElement, nextEntry);
 			}
@@ -444,6 +453,64 @@
 		}
 
 		/**
+		 * @param {HTMLFormElement} formElement
+		 * @returns {number}
+		 */
+		function readDashboardOrder(formElement) {
+			const field = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("dashboardOrder"));
+			const raw = field?.value?.trim() ?? "";
+			if (raw.length === 0) {
+				return 0;
+			}
+
+			const parsed = Number.parseInt(raw, 10);
+			return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+		}
+
+		/**
+		 * Keep the edited dashboard card visible after a dashboard rerender.
+		 * @param {HTMLElement} mainElement
+		 * @param {any} entry
+		 */
+		function keepEntryCardInView(mainElement, entry) {
+			const entryId = String(entry?.id ?? "").trim();
+			if (entryId.length === 0) {
+				return;
+			}
+
+			const tableWrap = /** @type {HTMLElement | null} */ (mainElement.querySelector(".dashboard-table-wrap"));
+			if (!tableWrap) {
+				return;
+			}
+
+			const selector = `.dashboard-entry-card[data-entry-id="${cssEscapeAttr(entryId)}"]`;
+			const card = /** @type {HTMLElement | null} */ (tableWrap.querySelector(selector));
+			if (!card) {
+				return;
+			}
+
+			const containerRect = tableWrap.getBoundingClientRect();
+			const cardRect = card.getBoundingClientRect();
+			const visibleTop = containerRect.top;
+			const visibleBottom = containerRect.bottom;
+			const isVisible = cardRect.top >= visibleTop && cardRect.bottom <= visibleBottom;
+			if (isVisible) {
+				return;
+			}
+
+			const nextTop = tableWrap.scrollTop
+				+ (cardRect.top - containerRect.top)
+				- ((tableWrap.clientHeight - cardRect.height) / 2);
+			const maxScrollTop = Math.max(0, tableWrap.scrollHeight - tableWrap.clientHeight);
+			const clampedTop = Math.min(Math.max(0, nextTop), maxScrollTop);
+
+			tableWrap.scrollTo({
+				top: clampedTop,
+				behavior: "smooth",
+			});
+		}
+
+		/**
 		 * Reflect selected entry to form and switch submit mode to update.
 		 * @param {any} entry
 		 */
@@ -458,15 +525,19 @@
 
 			const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 			const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
+			const orderInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("dashboardOrder"));
 			const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
 
-			if (!categoryInput || !nameInput || !descriptionInput) {
+			if (!categoryInput || !nameInput || !orderInput || !descriptionInput) {
 				return;
 			}
 
 			deps.setEditingEntryId(String(entry?.id ?? ""));
 			categoryInput.value = typeof entry?.category === "string" ? entry.category : "";
 			nameInput.value = typeof entry?.name === "string" ? entry.name : "";
+			orderInput.value = Number.isFinite(Number(entry?.dashboardOrder))
+				? String(Math.max(0, Number.parseInt(String(entry.dashboardOrder), 10)))
+				: "0";
 			descriptionInput.value = typeof entry?.description === "string" ? entry.description : "";
 			syncDateInputs?.(entry);
 
@@ -485,12 +556,16 @@
 			if (formElement) {
 				const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 				const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
+				const orderInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("dashboardOrder"));
 				const descriptionInput = /** @type {HTMLTextAreaElement | null} */ (formElement.elements.namedItem("description"));
 				if (categoryInput) {
 					categoryInput.value = "";
 				}
 				if (nameInput) {
 					nameInput.value = "";
+				}
+				if (orderInput) {
+					orderInput.value = "0";
 				}
 				if (descriptionInput) {
 					descriptionInput.value = "";

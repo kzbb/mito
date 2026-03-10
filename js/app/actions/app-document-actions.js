@@ -130,8 +130,18 @@
 				id: normalizedId,
 				category: normalizedCategory,
 				name: normalizedName,
+				dashboardOrder: normalizeDashboardOrder(entry?.dashboardOrder),
 				description: typeof entry?.description === "string" ? entry.description : "",
 			};
+		}
+
+		/**
+		 * @param {unknown} value
+		 * @returns {number}
+		 */
+		function normalizeDashboardOrder(value) {
+			const parsed = Number.parseInt(String(value ?? ""), 10);
+			return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 		}
 
 		/**
@@ -193,6 +203,7 @@
 						id: 1,
 						category: "出来事",
 						name: "新規エントリ",
+						dashboardOrder: 0,
 						dateCalendar: {},
 						description: "まずは設定からカレンダーを追加してください。",
 					},
