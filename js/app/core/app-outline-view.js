@@ -4,7 +4,6 @@
 	/**
 	 * @param {{
 	 *   getEditingEntryId: () => string | null,
-	 *   normalizeSettingsKeys: (data: any) => void,
 	 *   resolveProjectName: (data: any) => string,
 	 *   groupActiveEntriesByCategory: (data: any) => Map<string, any[]>,
 	 *   captureOpenCategories: (treeElement: HTMLElement) => Set<string> | null,
@@ -83,7 +82,6 @@
 			}
 
 			deps.setCurrentData(data);
-			deps.normalizeSettingsKeys(data);
 			scopeElement.textContent = deps.resolveProjectName(data);
 			populateCategoryOptions(data);
 			const openCategories = deps.captureOpenCategories(treeElement);

@@ -27,7 +27,6 @@
 	 *   setOutlineViewApi: (api: any | null) => void,
 	 *   getBridgeApi: () => any,
 	 *   setBridgeApi: (api: any | null) => void,
-	 *   normalizeSettingsKeys: (data: any) => void,
 	 *   renderOutlineFromData: (data: any) => void,
 	 *   setFormStatus: (message: string) => void,
 	 *   setTopbarSaveStatus: (message: string) => void,
@@ -94,7 +93,6 @@
 
 			deps.setOutlineViewApi(createAppOutlineView({
 				getEditingEntryId: deps.getEditingEntryId,
-				normalizeSettingsKeys: deps.normalizeSettingsKeys,
 				resolveProjectName: (/** @type {any} */ data) => deps.getBridgeApi()?.resolveProjectName?.(data) ?? (typeof data?.project === "string" ? data.project : "プロジェクト"),
 				groupActiveEntriesByCategory: (/** @type {any} */ data) => deps.getBridgeApi()?.groupActiveEntriesByCategory?.(data) ?? new Map(),
 				captureOpenCategories: (/** @type {HTMLElement} */ treeElement) => deps.getBridgeApi()?.captureOpenCategories?.(treeElement) ?? null,

@@ -76,91 +76,9 @@
 			};
 		}
 
-		/**
-		 * Normalize old setting keys to new names for compatibility.
-		 * @param {any} data
-		 */
-		function normalizeSettingsKeys(data) {
-			if (!data || typeof data !== "object") {
-				return;
-			}
-
-			if (
-				(!data.calendar || typeof data.calendar !== "object")
-				&& data.settings
-				&& typeof data.settings === "object"
-				&& data.settings.calendar
-				&& typeof data.settings.calendar === "object"
-			) {
-				data.calendar = data.settings.calendar;
-			}
-
-			if (!data.settings || typeof data.settings !== "object") {
-				return;
-			}
-
-			const settings = data.settings;
-			if (typeof settings.focusCategory !== "string" && typeof settings.masterCategory === "string") {
-				settings.focusCategory = settings.masterCategory;
-			}
-
-			if (typeof settings.dashboardLabel !== "string" && typeof settings.masterCategoryDashboard === "string") {
-				settings.dashboardLabel = settings.masterCategoryDashboard;
-			}
-
-			delete settings.masterCategory;
-			delete settings.masterCategoryDashboard;
-			delete settings.language;
-			delete settings.calendar;
-
-			normalizeEntryDateFields(data.active);
-			normalizeEntryDateFields(data.archived);
-		}
-
-		/**
-		 * @param {any} entries
-		 */
-		function normalizeEntryDateFields(entries) {
-			if (!Array.isArray(entries)) {
-				return;
-			}
-
-			for (const entry of entries) {
-				if (!entry || typeof entry !== "object") {
-					continue;
-				}
-
-				if (typeof entry.date !== "string") {
-					if (typeof entry.from === "string") {
-						entry.date = entry.from;
-					} else if (typeof entry.to === "string") {
-						entry.date = entry.to;
-					} else {
-						entry.date = "";
-					}
-				}
-
-				if (!entry.dateCalendar || typeof entry.dateCalendar !== "object") {
-					if (entry.fromCalendar && typeof entry.fromCalendar === "object") {
-						entry.dateCalendar = { ...entry.fromCalendar };
-					} else if (entry.toCalendar && typeof entry.toCalendar === "object") {
-						entry.dateCalendar = { ...entry.toCalendar };
-					} else {
-						entry.dateCalendar = {};
-					}
-				}
-
-				delete entry.from;
-				delete entry.to;
-				delete entry.fromCalendar;
-				delete entry.toCalendar;
-			}
-		}
-
 		return {
 			handleOpenFile,
 			handleNewFile,
-			normalizeSettingsKeys,
 		};
 	}
 

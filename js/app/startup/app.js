@@ -104,9 +104,6 @@ function initializeModules() {
 		setBridgeApi: (/** @type {any | null} */ api) => {
 			bridgeApi = api;
 		},
-		normalizeSettingsKeys: (/** @type {any} */ data) => {
-			normalizeSettingsKeys(data);
-		},
 		renderOutlineFromData: (/** @type {any} */ data) => {
 			renderOutlineFromData(data);
 		},
@@ -171,16 +168,6 @@ async function handleOpenFile(file) {
 function handleNewFile() {
 	if (documentActionsApi && typeof documentActionsApi.handleNewFile === "function") {
 		documentActionsApi.handleNewFile();
-	}
-}
-
-/**
- * Normalize old setting keys to new names for compatibility.
- * @param {any} data
- */
-function normalizeSettingsKeys(data) {
-	if (documentActionsApi && typeof documentActionsApi.normalizeSettingsKeys === "function") {
-		documentActionsApi.normalizeSettingsKeys(data);
 	}
 }
 
