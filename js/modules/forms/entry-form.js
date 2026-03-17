@@ -206,6 +206,7 @@
 				...timelinePayload,
 			};
 
+			const activeView = captureActiveMainView(mainElement);
 			const nextEntry = { ...targetEntry, ...nextPayload };
 			const changed = JSON.stringify(nextEntry) !== JSON.stringify(targetEntry);
 			if (!changed) {
@@ -214,7 +215,6 @@
 
 			const treeAffectingChange = nextEntry.category !== targetEntry.category
 				|| nextEntry.name !== targetEntry.name;
-			const wasDetailView = Boolean(mainElement.querySelector(".entry-wiki"));
 
 			currentData.active[targetIndex] = nextEntry;
 
@@ -225,20 +225,34 @@
 				document.dispatchEvent(new CustomEvent("mito:data-changed"));
 			}
 
-			const currentTitle = mainElement.querySelector("h2")?.textContent?.trim() ?? "";
-			const dashboardLabel = deps.resolveDashboardLabel(currentData);
-			if (currentTitle === dashboardLabel) {
+			if (activeView === "dashboard") {
 				const previousScrollTop = mainElement.scrollTop;
 				deps.renderDashboardOverview(mainElement, currentData);
 				mainElement.scrollTop = previousScrollTop;
 				window.requestAnimationFrame(() => {
 					keepEntryCardInView(mainElement, nextEntry);
 				});
-			} else if (wasDetailView) {
+			} else if (activeView === "detail") {
 				deps.renderEntryDetail(mainElement, nextEntry);
 			}
 
 			deps.setFormStatus("編集中: 入力内容をリアルタイム反映しました。");
+		}
+
+		/**
+		 * @param {HTMLElement} mainElement
+		 * @returns {"dashboard" | "detail" | "other"}
+		 */
+		function captureActiveMainView(mainElement) {
+			if (mainElement.classList.contains("dashboard-view")) {
+				return "dashboard";
+			}
+
+			if (mainElement.querySelector(".entry-wiki")) {
+				return "detail";
+			}
+
+			return "other";
 		}
 
 		/**

@@ -121,7 +121,9 @@
 			});
 			const firstSelection = deps.renderCategoryTree(treeElement, grouped, (entry, button) => {
 				deps.selectTreeLeaf(treeElement, button);
-				deps.renderEntryDetail(mainElement, entry);
+				const entryId = String(entry?.id ?? "");
+				const latestEntry = entryId ? (deps.findActiveEntryById(data, entryId) ?? entry) : entry;
+				deps.renderEntryDetail(mainElement, latestEntry);
 			}, openCategories);
 			const settingsSelection = deps.renderSettingsButton(data, (item) => {
 				deps.clearTreeSelection(treeElement);
