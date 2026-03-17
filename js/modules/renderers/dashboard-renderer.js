@@ -145,7 +145,7 @@
 			const [startRowIndex, endRowIndex] = visibleRange;
 			const rangeLabel = document.createElement("p");
 			rangeLabel.className = "dashboard-range";
-			rangeLabel.textContent = `表示範囲: 行${startRowIndex + 2} - 行${endRowIndex + 2}`;
+			rangeLabel.textContent = `表示行: ${endRowIndex - startRowIndex + 1} (${schema.rows[startRowIndex]?.[schema.headers[0]] ?? ""} 〜 ${schema.rows[endRowIndex]?.[schema.headers[0]] ?? ""})`;
 			mainElement.appendChild(rangeLabel);
 
 			const tableWrap = createDashboardTable(schema, categoryColumns, startRowIndex, endRowIndex);
