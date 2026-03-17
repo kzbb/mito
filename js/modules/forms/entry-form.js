@@ -346,7 +346,7 @@
 				emptyOption.textContent = "";
 				select.appendChild(emptyOption);
 
-				for (const optionValue of Array.from(options).sort((a, b) => a.localeCompare(b, "ja"))) {
+				for (const optionValue of options) {
 					const option = document.createElement("option");
 					option.value = optionValue;
 					option.textContent = optionValue;
