@@ -74,6 +74,9 @@
 		}
 
 		/**
+		 * Markdownテキストを1行ずつ処理してHTMLブロック列に変換する。
+		 * コードブロック・見出し・リスト・引用・段落の各ブロック要素に対応する。
+		 * インライン要素（リンク・太字・斜体・コード）は renderInline に委譲する。
 		 * @param {string} source
 		 * @returns {string}
 		 */
@@ -84,23 +87,26 @@
 			}
 
 			const lines = normalized.split("\n");
-			/** @type {string[]} */
+			/** @type {string[]} 完成したHTMLブロック要素の配列。最後に結合して返す */
 			const blocks = [];
+			/** コードブロック（```）内にいるかどうか */
 			let inCode = false;
-			/** @type {string[]} */
+			/** @type {string[]} コードブロック内で蓄積中の行 */
 			let codeLines = [];
-			/** @type {string[]} */
+			/** @type {string[]} 段落として蓄積中の行 */
 			let paragraphLines = [];
-			/** @type {string[]} */
+			/** @type {string[]} リストアイテムとして蓄積中のテキスト */
 			let listItems = [];
-			/** @type {"ul" | "ol" | null} */
+			/** @type {"ul" | "ol" | null} 現在処理中のリスト種別 */
 			let listMode = null;
-			/** @type {number | null} */
+			/** @type {number | null} 番号付きリストの開始番号 */
 			let orderedListStart = null;
-			/** @type {string[]} */
+			/** @type {string[]} 引用ブロックとして蓄積中の行 */
 			let quoteLines = [];
+			/** 連続した空行のカウント（2行以上で明示的な改行ブロックを挿入） */
 			let blankLineStreak = 0;
 
+			// 蓄積中の段落行を <p> ブロックに変換して blocks へ追加する
 			const flushParagraph = () => {
 				if (paragraphLines.length === 0) {
 					return;
@@ -110,6 +116,7 @@
 				paragraphLines = [];
 			};
 
+			// 蓄積中のリストアイテムを <ul> または <ol> ブロックに変換して blocks へ追加する
 			const flushList = () => {
 				if (listItems.length === 0) {
 					return;
@@ -124,6 +131,7 @@
 				orderedListStart = null;
 			};
 
+			// 蓄積中の引用行を <blockquote> ブロックに変換して blocks へ追加する
 			const flushQuote = () => {
 				if (quoteLines.length === 0) {
 					return;

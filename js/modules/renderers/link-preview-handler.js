@@ -12,11 +12,13 @@
 	 * }} deps
 	 */
 	function createLinkPreviewHandler(deps) {
-		/** @type {HTMLDivElement | null} */
+		/** @type {HTMLDivElement | null} プレビューを表示するポップオーバー要素（初回表示時にDOMへ追加される） */
 		let linkPreviewPopover = null;
-		/** @type {HTMLAnchorElement | null} */
+		/** @type {HTMLAnchorElement | null} 現在プレビューを表示しているリンク要素 */
 		let linkPreviewAnchor = null;
+		/** 表示中の画像プレビュー用BlobオブジェクトURL。blob: でない場合は空文字 */
 		let activePreviewImageUrl = "";
+		/** 非同期プレビュー取得のシーケンス番号。古いリクエストの結果を破棄するために使用 */
 		let linkPreviewRequestId = 0;
 
 		/**
@@ -284,6 +286,10 @@
 			linkPreviewPopover.style.top = `${top}px`;
 		}
 
+		/**
+		 * プレビューポップオーバーを非表示にし、進行中のプレビュー取得をキャンセルする。
+		 * requestId をインクリメントすることで非同期処理の結果が遅れて届いても無視される。
+		 */
 		function hide() {
 			linkPreviewRequestId += 1;
 			linkPreviewAnchor = null;
@@ -295,6 +301,10 @@
 			linkPreviewPopover.hidden = true;
 		}
 
+		/**
+		 * 画像プレビュー用のBlobオブジェクトURLを解放する。
+		 * blob: URL でなければ単純にリセットするだけで解放処理は行わない。
+		 */
 		function revokePreviewImageUrl() {
 			if (!activePreviewImageUrl.startsWith("blob:")) {
 				activePreviewImageUrl = "";

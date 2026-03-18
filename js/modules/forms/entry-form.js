@@ -38,7 +38,7 @@
 		/** @type {((entry: any | null) => void) | null} */
 		let syncDateInputs = null;
 		/**
-		 * Initialize the data entry form in the lower left pane.
+		 * 左下ペインのエントリ入力フォームを初期化する。
 		 */
 		function setupEntryForm() {
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
@@ -53,6 +53,8 @@
 			syncDateInputs = setupTimelineFields(formElement);
 			syncDateInputs(null);
 			resetButton.hidden = true;
+
+			// データ変更イベント発火時、編集中エントリの日付フィールドを最新状態に同期する
 			document.addEventListener("mito:data-changed", () => {
 				const currentData = deps.getCurrentData();
 				const editingEntryId = deps.getEditingEntryId();
@@ -70,6 +72,7 @@
 				syncDateInputs?.(currentData.active[targetIndex] ?? null);
 			});
 
+			// Tab キーによるフォーカス移動をカスタム制御し、フォーム内で循環させる
 			formElement.addEventListener("keydown", (event) => {
 				if (event.key !== "Tab") {
 					return;
@@ -90,12 +93,15 @@
 				focusables[nextIndex].focus();
 			});
 
+			// input / change どちらのイベントでもリアルタイム編集を反映する
+			// （select は input を発火しないブラウザがあるため change も購読する）
 			const handleRealtimeEdit = () => {
 				applyRealtimeEdit(formElement, mainElement);
 			};
 			formElement.addEventListener("input", handleRealtimeEdit);
 			formElement.addEventListener("change", handleRealtimeEdit);
 
+			// フォーム送信 = 新規エントリの追加。編集中の場合はリアルタイム反映済みのため何もしない
 			formElement.addEventListener("submit", (event) => {
 				event.preventDefault();
 
@@ -154,6 +160,7 @@
 				deps.setFormStatus("新しいエントリを追加し、該当カテゴリへ反映しました。");
 			});
 
+				// フォームリセット（「新規作成」ボタン）で追加モードに戻す
 			formElement.addEventListener("reset", () => {
 				setFormModeAdd();
 				syncDateInputs?.(null);
@@ -205,13 +212,16 @@
 				...timelinePayload,
 			};
 
+			// 再描画前に現在のビューを確認しておく（描画後は DOM が変わるため）
 			const activeView = captureActiveMainView(mainElement);
 			const nextEntry = { ...targetEntry, ...nextPayload };
+			// JSON 比較で実際に変化があった場合のみ描画を行い、不要な再描画を避ける
 			const changed = JSON.stringify(nextEntry) !== JSON.stringify(targetEntry);
 			if (!changed) {
 				return;
 			}
 
+			// カテゴリや名前が変わった場合はツリーも再描画が必要。それ以外は data-changed のみ発火する
 			const treeAffectingChange = nextEntry.category !== targetEntry.category
 				|| nextEntry.name !== targetEntry.name;
 
@@ -225,6 +235,7 @@
 			}
 
 			if (activeView === "dashboard") {
+				// スクロール位置を保持して再描画し、編集中カードが画面内に収まるよう調整する
 				const previousScrollTop = mainElement.scrollTop;
 				deps.renderDashboardOverview(mainElement, currentData);
 				mainElement.scrollTop = previousScrollTop;
@@ -481,7 +492,7 @@
 		}
 
 		/**
-		 * Keep the edited dashboard card visible after a dashboard rerender.
+		 * ダッシュボード再描画後、編集中のカードが画面内に収まるようスクロールを調整する。
 		 * @param {HTMLElement} mainElement
 		 * @param {any} entry
 		 */
@@ -524,7 +535,7 @@
 		}
 
 		/**
-		 * Reflect selected entry to form and switch submit mode to update.
+		 * 選択エントリをフォームに反映し、送信モードを「更新」に切り替える。
 		 * @param {any} entry
 		 */
 		function enterEditMode(entry) {
@@ -560,7 +571,7 @@
 		}
 
 		/**
-		 * Switch form back to add mode.
+		 * フォームを新規追加モードに戻す。
 		 */
 		function setFormModeAdd() {
 			deps.setEditingEntryId(null);

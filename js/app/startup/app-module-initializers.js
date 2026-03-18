@@ -186,7 +186,7 @@
 		}
 
 		/**
-		 * Initialize tree/renderer/model/form bridge helpers from external module.
+		 * 外部モジュールからブリッジヘルパーを初期化する。
 		 */
 		function initializeBridgeModule() {
 			const createAppBridge = /** @type {any} */ (globalObject).createAppBridge;
@@ -204,7 +204,7 @@
 		}
 
 		/**
-		 * Initialize pure data helpers from external module.
+		 * 外部モジュールからデータモデルヘルパーを初期化する。
 		 */
 		function initializeDataModel() {
 			const createDataModel = /** @type {any} */ (globalObject).createDataModel;
@@ -216,7 +216,7 @@
 		}
 
 		/**
-		 * Initialize persistence helpers from external module.
+		 * 外部モジュールからファイル保存ヘルパーを初期化する。
 		 */
 		function initializePersistenceModule() {
 			const createPersistenceModule = /** @type {any} */ (globalObject).createPersistenceModule;
@@ -234,7 +234,7 @@
 		}
 
 		/**
-		 * Initialize outline rendering helpers from external module.
+		 * 外部モジュールからアウトライン描画ヘルパーを初期化する。
 		 */
 		function initializeOutlineViewModule() {
 			const createAppOutlineView = /** @type {any} */ (globalObject).createAppOutlineView;
@@ -280,7 +280,7 @@
 		}
 
 		/**
-		 * Initialize open/new/template helpers from external module.
+		 * 外部モジュールからドキュメント操作ヘルパーを初期化する。
 		 */
 		function initializeDocumentActionsModule() {
 			const createAppDocumentActions = /** @type {any} */ (globalObject).createAppDocumentActions;
@@ -302,7 +302,7 @@
 		}
 
 		/**
-		 * Initialize rendering helpers from external module.
+		 * 外部モジュールからレンダラーを初期化する。
 		 */
 		function initializeRenderers() {
 			const createRendererComposer = /** @type {any} */ (globalObject).createRendererComposer;
@@ -524,7 +524,7 @@
 		}
 
 		/**
-		 * Initialize tree rendering helpers from external module.
+		 * 外部モジュールからツリーレンダラーを初期化する。
 		 */
 		function initializeTreeRenderer() {
 			const createTreeRenderer = /** @type {any} */ (globalObject).createTreeRenderer;
@@ -539,7 +539,7 @@
 		}
 
 		/**
-		 * Initialize entry form helpers from external module.
+		 * 外部モジュールからエントリフォームモジュールを初期化する。
 		 */
 		function initializeEntryFormModule() {
 			const createEntryFormModule = /** @type {any} */ (globalObject).createEntryFormModule;
@@ -568,6 +568,10 @@
 			}));
 		}
 
+		/**
+		 * 全モジュールを依存関係の順序に従って初期化する。
+		 * ブリッジが最初に来るのは他のモジュールが getBridgeApi() を呼び出すため。
+		 */
 		function initializeAllModules() {
 			initializeBridgeModule();
 			initializeRenderers();

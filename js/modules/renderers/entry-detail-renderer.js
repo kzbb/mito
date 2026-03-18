@@ -123,6 +123,7 @@
 				const summaryHtml = document.createElement("div");
 				summaryHtml.className = "entry-description";
 				summaryHtml.innerHTML = renderMarkdownToHtml(descriptionText.trim());
+				// リンクのクリック・ホバー・フォーカスをすべて linkPreviewHandler に委譲する
 				summaryHtml.addEventListener("click", (event) => {
 					void linkPreviewHandler?.handleClick(event);
 				});

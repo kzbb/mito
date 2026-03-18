@@ -92,7 +92,7 @@
 		}
 
 		/**
-		 * Normalize text for tolerant calendar value comparisons.
+		 * カレンダー値の表記ゆれを吸収するためにテキストを正規化する。
 		 * @param {string} value
 		 * @returns {string}
 		 */

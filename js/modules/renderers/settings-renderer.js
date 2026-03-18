@@ -97,6 +97,7 @@
 			calendarButton.type = "button";
 			calendarButton.className = "settings-calendar-button";
 			calendarButton.textContent = "カレンダーの編集";
+			// カレンダー編集画面を開く
 			calendarButton.addEventListener("click", () => {
 				deps.onOpenCalendarEditor();
 			});
@@ -130,6 +131,7 @@
 			projectInput.value = projectName;
 			projectInput.placeholder = "プロジェクト名";
 			projectInput.setAttribute("aria-label", "project");
+			// プロジェクト名が変わるたびにブリッジ経由でツリー見出しをリアルタイム更新する
 			projectInput.addEventListener("input", () => {
 				const nextProject = projectInput.value.trim();
 				deps.onProjectNameInput(nextProject);
@@ -157,7 +159,9 @@
 				input.className = "settings-value-input";
 				input.value = String(value ?? "");
 				input.setAttribute("aria-label", key);
-				input.addEventListener("input", () => {
+				// 設定値の型（数値・真偽値・null）を保ちながらデータを更新する。
+			// dashboardLabel / masterCategoryDashboard はダッシュボードボタンにも即時反映する。
+			input.addEventListener("input", () => {
 					const nextData = deps.getCurrentData();
 					if (!nextData || !nextData.settings || typeof nextData.settings !== "object") {
 						return;
@@ -219,6 +223,7 @@
 				restoreButton.className = "settings-archived-restore";
 				restoreButton.textContent = "復元";
 				restoreButton.setAttribute("aria-label", `${deps.resolveEntryName(entry)} を復元`);
+				// アイテムをアクティブリストに戻し、設定画面を再描画する
 				restoreButton.addEventListener("click", () => {
 					const restoredEntry = deps.onRestoreDeletedEntry(entry);
 					if (!restoredEntry) {
@@ -237,6 +242,7 @@
 				deleteButton.className = "settings-archived-delete";
 				deleteButton.textContent = "完全に削除";
 				deleteButton.setAttribute("aria-label", `${deps.resolveEntryName(entry)} を完全削除`);
+				// 削除済みリストからも除去し、復元不能にする
 				deleteButton.addEventListener("click", () => {
 					const deleted = deps.onPermanentlyDeleteDeletedEntry(entry);
 					if (!deleted) {
@@ -287,7 +293,7 @@
 		}
 
 		/**
-		 * Parse edited setting value while preserving simple primitive types.
+		 * 編集された設定値を、元の型（数値・真偽値・nullなど）を保ちながらパースする。
 		 * @param {string} rawValue
 		 * @param {unknown} originalValue
 		 * @returns {unknown}

@@ -1,57 +1,63 @@
 // @ts-check
 
-/** @type {any | null} */
+/** @type {any | null} 現在開いているJSONドキュメントのデータ本体 */
 let currentData = null;
 
-/** @type {string | null} */
+/** @type {string | null} フォームで編集中のエントリID。新規作成時はnull */
 let editingEntryId = null;
 
-/** @type {string} */
+/** @type {string} 現在のファイル名（保存ダイアログのデフォルト値として使用） */
 let currentFileName = "data.json";
 
-/** @type {any | null} */
+/** @type {any | null} File System Access APIのファイルハンドル。フォールバック保存時はnull */
 let currentFileHandle = null;
 
-/** @type {FileSystemDirectoryHandle | null} */
+/** @type {FileSystemDirectoryHandle | null} 相対パスリンクの基準ディレクトリ。ファイル閉時にnullへリセット */
 let linkBaseDirectoryHandle = null;
 
-/** @type {any | null} */
+/** @type {any | null} レンダラーモジュールのAPI */
 let rendererApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} ツリーレンダラーのAPI */
 let treeApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} エントリフォームモジュールのAPI */
 let formApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} データモデルヘルパーのAPI */
 let modelApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} ファイル入出力モジュールのAPI */
 let persistenceApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} ドキュメント操作（開く・新規作成）モジュールのAPI */
 let documentActionsApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} 左パネル（アウトライン）モジュールのAPI */
 let outlineViewApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} モジュール間の橋渡しをするブリッジAPI */
 let bridgeApi = null;
 
-/** @type {any | null} */
+/** @type {any | null} モジュール初期化コーディネーターのAPI */
 let moduleInitializersApi = null;
 
-/** @type {boolean} */
+/** @type {boolean} 未保存の変更があるかどうか。ページ離脱確認に使用 */
 let isDirty = false;
 
-/** @type {number | null} */
+/** @type {number | null} オートセーブのデバウンスタイマーID */
 let autosaveTimerId = null;
 
-/** @type {boolean | null} */
+/**
+ * @type {boolean | null}
+ * 次回の mito:data-changed イベントで isDirty をどの値にセットするかの予約値。
+ * nullの場合はデフォルト動作（true）になる。
+ */
 let nextDataChangeDirtyState = null;
 
+/** localStorageでオートセーブに使うキー */
 const AUTOSAVE_STORAGE_KEY = "mito:autosave:v1";
+/** 入力停止後にオートセーブが走るまでの待機時間（ミリ秒） */
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 /**
@@ -64,6 +70,8 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 initializeModules();
 
+// データ変更イベントを受け取ったら dirty フラグを更新しオートセーブを予約する。
+// nextDataChangeDirtyState に予約値があればそれを使い、なければ true にする。
 document.addEventListener("mito:data-changed", () => {
 	if (!currentData) {
 		return;
@@ -81,6 +89,7 @@ document.addEventListener("mito:data-changed", () => {
 	}
 });
 
+// 未保存の変更がある状態でページを離脱しようとした場合に確認ダイアログを出す。
 window.addEventListener("beforeunload", (event) => {
 	if (!isDirty) {
 		return;
@@ -189,6 +198,10 @@ function queueNextDataChangeDirtyState(nextDirty) {
 	nextDataChangeDirtyState = nextDirty;
 }
 
+/**
+ * 変更後にオートセーブをデバウンス実行する。
+ * 連続した変更でタイマーがリセットされ、最後の変更から一定時間後に保存される。
+ */
 function scheduleAutosave() {
 	if (!currentData) {
 		return;
@@ -204,6 +217,10 @@ function scheduleAutosave() {
 	}, AUTOSAVE_DEBOUNCE_MS);
 }
 
+/**
+ * 現在のデータをlocalStorageにスナップショットとして書き込む。
+ * ページを閉じても下書きが残るため、次回起動時に復元できる。
+ */
 function persistAutosaveSnapshot() {
 	if (!currentData) {
 		return;
@@ -221,6 +238,10 @@ function persistAutosaveSnapshot() {
 	}
 }
 
+/**
+ * localStorageのオートセーブスナップショットを削除する。
+ * ファイル保存が成功した後に呼ばれる。
+ */
 function clearAutosaveSnapshot() {
 	try {
 		window.localStorage.removeItem(AUTOSAVE_STORAGE_KEY);
@@ -240,6 +261,10 @@ function requestDiscardUnsavedChanges(actionLabel) {
 	return window.confirm(`未保存の変更があります。${actionLabel}を続行しますか？`);
 }
 
+/**
+ * 起動時にlocalStorageの下書きを確認し、ユーザーの確認後に復元する。
+ * 破損したスナップショットは自動的に削除する。
+ */
 function tryRestoreAutosaveSnapshot() {
 	let rawSnapshot = "";
 	try {
@@ -286,7 +311,7 @@ function tryRestoreAutosaveSnapshot() {
 }
 
 /**
- * Render project outline from loaded JSON into the left panel.
+ * 読み込んだJSONからプロジェクトのアウトラインを左パネルに描画する。
  * @param {any} data
  */
 function renderOutlineFromData(data) {
@@ -297,7 +322,7 @@ function renderOutlineFromData(data) {
 
 
 /**
- * Reset UI before a file is loaded.
+ * ファイル読み込み前の待機状態のUIを表示する。
  */
 function renderWaitingForFile() {
 	if (outlineViewApi && typeof outlineViewApi.renderWaitingForFile === "function") {
@@ -306,7 +331,7 @@ function renderWaitingForFile() {
 }
 
 /**
- * Show file loading error.
+ * ファイル読み込みエラーを左パネルに表示する。
  * @param {string} message
  */
 function renderFileLoadError(message) {
@@ -316,7 +341,7 @@ function renderFileLoadError(message) {
 }
 
 /**
- * Handle selected JSON file from top bar open action.
+ * トップバーの「開く」から選択されたJSONファイルを処理する。
  * @param {File} file
  * @returns {Promise<void>}
  */
@@ -336,7 +361,7 @@ async function handleOpenFile(file) {
 }
 
 /**
- * Create a new document and render it.
+ * 新しいドキュメントを作成して描画する。
  */
 function handleNewFile() {
 	if (!requestDiscardUnsavedChanges("新規作成")) {
@@ -356,7 +381,7 @@ function handleNewFile() {
 }
 
 /**
- * Save currently loaded JSON to a file.
+ * 現在読み込み中のJSONをファイルに保存する。
  * @returns {Promise<void>}
  */
 async function saveCurrentData() {

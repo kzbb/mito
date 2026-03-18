@@ -2,7 +2,7 @@
 
 (function registerLayout(globalObject) {
 	/**
-	 * Enable dragging splitters for column width and left pane top/bottom height.
+	 * カラム幅と左パネルの上下高さを変えるスプリッターのドラッグ操作を有効にする。
 	 */
 	function setupLayoutResizers() {
 		enableColumnResize();
@@ -10,7 +10,7 @@
 	}
 
 	/**
-	 * Enable dragging the splitter to resize the left column.
+	 * 左カラムの幅を変えるスプリッターのドラッグを有効にする。
 	 */
 	function enableColumnResize() {
 		const root = document.documentElement;
@@ -21,10 +21,16 @@
 			return;
 		}
 
+		/** 左カラムの最小幅（px） */
 		const MIN_LEFT = 240;
+		/** メインエリアの最小幅（px）。左カラムがこれ以上広がらないよう制限する */
 		const MIN_MAIN = 380;
 
-		/** @param {number} startX */
+		/**
+		 * ドラッグ開始時に呼ばれる。pointermove / pointerup をドキュメント全体で購読し、
+		 * 移動量に応じて CSS 変数 --left-width を更新する。
+		 * @param {number} startX ドラッグ開始時の clientX
+		 */
 		const startDragging = (startX) => {
 			const rect = columns.getBoundingClientRect();
 			const leftStart = Number.parseFloat(getComputedStyle(root).getPropertyValue("--left-width"));
@@ -37,6 +43,7 @@
 				root.style.setProperty("--left-width", `${nextLeft}px`);
 			};
 
+			// ドラッグ終了時にリスナーを解除し is-dragging クラスを外す
 			const onUp = () => {
 				leftSplitter.classList.remove("is-dragging");
 				document.removeEventListener("pointermove", onMove);
@@ -54,7 +61,7 @@
 	}
 
 	/**
-	 * Enable dragging the horizontal splitter inside the left panel.
+	 * 左パネル内の水平スプリッターのドラッグを有効にする。
 	 */
 	function enableLeftPaneResize() {
 		const root = document.documentElement;
@@ -65,13 +72,20 @@
 			return;
 		}
 
+		/** ツリーペインの最小高さ（px） */
 		const MIN_TOP = 170;
+		/** フォームペインの最小高さ（px）。ツリーがこれ以上伸びないよう制限する */
 		const MIN_BOTTOM = 190;
 
-		/** @param {number} startY */
+		/**
+		 * ドラッグ開始時に呼ばれる。pointermove / pointerup をドキュメント全体で購読し、
+		 * 移動量に応じて CSS 変数 --left-top-height を更新する。
+		 * @param {number} startY ドラッグ開始時の clientY
+		 */
 		const startDragging = (startY) => {
 			const rect = leftWindow.getBoundingClientRect();
 			const splitterHeight = Number.parseFloat(getComputedStyle(root).getPropertyValue("--left-pane-splitter-height")) || 6;
+			// --left-top-height が未設定の場合は高さの55%をデフォルトとして使う
 			const topStartRaw = Number.parseFloat(getComputedStyle(root).getPropertyValue("--left-top-height"));
 			const topStart = Number.isFinite(topStartRaw) && topStartRaw > 0 ? topStartRaw : rect.height * 0.55;
 
@@ -83,6 +97,7 @@
 				root.style.setProperty("--left-top-height", `${nextTop}px`);
 			};
 
+			// ドラッグ終了時にリスナーを解除し is-dragging クラスを外す
 			const onUp = () => {
 				paneSplitter.classList.remove("is-dragging");
 				document.removeEventListener("pointermove", onMove);

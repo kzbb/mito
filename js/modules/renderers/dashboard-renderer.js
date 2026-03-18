@@ -262,7 +262,7 @@
 					maxLength = Math.max(maxLength, valueLength);
 				}
 
-				// Requested width: roughly text length + 2 chars of breathing room.
+				// 幅の目安: テキスト長 + 余白2文字
 				widths.push(Math.max(4, maxLength + 2));
 			}
 
@@ -428,6 +428,10 @@
 			bucketResizeObserver.observe(tableWrap);
 		}
 
+		/**
+		 * バケットのResizeObserverを切断して解放する。
+		 * 再描画前に呼ばれ、古いテーブルへの参照が残り続けるのを防ぐ。
+		 */
 		function teardownBucketObserver() {
 			if (!bucketResizeObserver) {
 				return;

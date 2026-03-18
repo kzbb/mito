@@ -24,7 +24,7 @@
 	 */
 	function createAppOutlineView(deps) {
 		/**
-		 * Fill category suggestions in the form from existing JSON categories.
+		 * JSONに存在するカテゴリをフォームの候補として補完する。
 		 * @param {any} data
 		 */
 		function populateCategoryOptions(data) {
@@ -83,7 +83,7 @@
 		}
 
 		/**
-		 * Hide the settings button when no file is loaded.
+		 * ファイル未読み込み時に設定ボタンを非表示にする。
 		 */
 		function hideSettingsButton() {
 			const button = /** @type {HTMLButtonElement | null} */ (document.getElementById("outline-settings"));
@@ -96,7 +96,7 @@
 		}
 
 		/**
-		 * Render project outline from loaded JSON into the left panel.
+		 * 読み込んだJSONからプロジェクトのアウトラインを左パネルに描画する。
 		 * @param {any} data
 		 */
 		function renderOutlineFromData(data) {
@@ -156,7 +156,7 @@
 		}
 
 		/**
-		 * Reset UI before a file is loaded.
+		 * ファイル読み込み前の待機状態のUIを表示する。
 		 */
 		function renderWaitingForFile() {
 			const scopeElement = document.getElementById("outline-scope");
@@ -177,7 +177,7 @@
 		}
 
 		/**
-		 * Show file loading error.
+		 * ファイル読み込みエラーを左パネルに表示する。
 		 * @param {string} message
 		 */
 		function renderFileLoadError(message) {

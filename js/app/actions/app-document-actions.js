@@ -145,7 +145,7 @@
 		}
 
 		/**
-		 * Handle selected JSON file from top bar open action.
+		 * トップバーの「開く」から選択されたJSONファイルを処理する。
 		 * @param {File} file
 		 * @returns {Promise<boolean>}
 		 */
@@ -170,7 +170,7 @@
 		}
 
 		/**
-		 * Create a new document and render it.
+		 * 新しいドキュメントを作成して描画する。
 		 * @returns {boolean}
 		 */
 		function handleNewFile() {

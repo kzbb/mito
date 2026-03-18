@@ -2,7 +2,7 @@
 
 (function registerRendererComposer(globalObject) {
 	/**
-	 * Create renderer helpers with app-level callbacks.
+	 * アプリレベルのコールバックを受け取り、レンダラーヘルパーを生成する。
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   onEnterEditMode: (entry: any) => void,

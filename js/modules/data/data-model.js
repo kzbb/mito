@@ -2,7 +2,7 @@
 
 (function registerDataModel(globalObject) {
 	/**
-	 * Create pure data helpers for active entries and project metadata.
+	 * アクティブエントリとプロジェクトメタデータを操作する純粋なデータヘルパーを生成する。
 	 */
 	function createDataModel() {
 		/**

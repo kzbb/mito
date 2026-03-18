@@ -105,7 +105,8 @@
 			let selectedRowIndex = 0;
 			let selectedColumnIndex = 0;
 
-			fileInput.addEventListener("change", async () => {
+			// CSVファイルを読み込んでグリッドデータを置き換え、再描画する
+		fileInput.addEventListener("change", async () => {
 				const selectedFile = fileInput.files?.[0] ?? null;
 				if (!selectedFile) {
 					return;
@@ -131,7 +132,8 @@
 				}
 			});
 
-			deleteRowButton.addEventListener("click", () => {
+			// 選択中の行を削除する（1行未満にはできない）
+		deleteRowButton.addEventListener("click", () => {
 				if (grid.length <= 1) {
 					deps.onSetFormStatus("行は1行未満にできません。");
 					return;
@@ -147,7 +149,8 @@
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 			});
 
-			deleteColumnButton.addEventListener("click", () => {
+			// 選択中の列を削除する（1列未満にはできない）
+		deleteColumnButton.addEventListener("click", () => {
 				const width = getGridWidth(grid);
 				if (width <= 1) {
 					deps.onSetFormStatus("列は1列未満にできません。");
@@ -166,12 +169,18 @@
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 			});
 
-			exportButton.addEventListener("click", () => {
+			// 現在のグリッドをCSVとしてダウンロードする
+		exportButton.addEventListener("click", () => {
 				const csvText = gridToCsv(grid);
 				downloadCsv(csvText, resolveExportFileName(data));
 				deps.onSetFormStatus("CSVを書き出しました。");
 			});
 
+			/**
+			 * グリッドデータを元に編集可能なカレンダーテーブルを再描画する。
+			 * 行・列の選択状態を is-selected で表現し、各セルに input を配置する。
+			 * ヘッダーと末尾の「+」ボタンで行・列の挿入も行う。
+			 */
 			function renderGrid() {
 				gridWrap.innerHTML = "";
 				const table = document.createElement("table");
