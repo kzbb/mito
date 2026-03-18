@@ -5,7 +5,8 @@
 	 * @returns {{
 	 *   resolveCalendarSchema: (data: any) => { headers: string[], rows: Record<string, string>[] },
 	 *   resolveTimelineValues: (entry: any, key: string, headers: string[]) => Record<string, string>,
-	 *   renderMarkdownToHtml: (source: string) => string
+	 *   renderMarkdownToHtml: (source: string) => string,
+	 *   makeEntryByNameResolver: (getCurrentData: () => any, resolveEntryName: (entry: any) => string) => (name: string) => any | null
 	 * }}
 	 */
 	function createRendererFallbacks() {
@@ -33,10 +34,34 @@
 				.replace(/'/g, "&#39;")
 				.replace(/\n/g, "<br>"));
 
+		/**
+		 * @param {() => any} getCurrentData
+		 * @param {(entry: any) => string} resolveEntryName
+		 * @returns {(name: string) => any | null}
+		 */
+		function makeEntryByNameResolver(getCurrentData, resolveEntryName) {
+			return function (name) {
+				if (!name) {
+					return null;
+				}
+				const normalized = name.trim().toLocaleLowerCase("ja");
+				const currentData = getCurrentData();
+				const activeEntries = Array.isArray(currentData?.active) ? currentData.active : [];
+				for (const candidate of activeEntries) {
+					const candidateName = resolveEntryName(candidate).trim().toLocaleLowerCase("ja");
+					if (candidateName === normalized) {
+						return candidate;
+					}
+				}
+				return null;
+			};
+		}
+
 		return {
 			resolveCalendarSchema,
 			resolveTimelineValues,
 			renderMarkdownToHtml,
+			makeEntryByNameResolver,
 		};
 	}
 

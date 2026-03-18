@@ -23,18 +23,17 @@
 		const rendererFallbacks = typeof createRendererFallbacks === "function"
 			? createRendererFallbacks()
 			: null;
-		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] })));
+		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
 		const findCalendarRowByValue = calendarUtils?.findCalendarRowByValue ?? (() => null);
 		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
-			?? (calendarUtils?.resolveTimelineValues
-				?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-					/** @type {Record<string, string>} */
-					const values = {};
-					for (const header of headers) {
-						values[header] = "";
-					}
-					return values;
-				}));
+			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
+				/** @type {Record<string, string>} */
+				const values = {};
+				for (const header of headers) {
+					values[header] = "";
+				}
+				return values;
+			});
 
 		/** @type {((entry: any | null) => void) | null} */
 		let syncDateInputs = null;

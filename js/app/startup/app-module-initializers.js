@@ -36,6 +36,155 @@
 	 * }} deps
 	 */
 	function createAppModuleInitializers(deps) {
+		const FILE_PREVIEW_MAX_SIZE_BYTES = 512_000;
+		const FILE_PREVIEW_MAX_CHARS = 260;
+		const IMAGE_PREVIEW_MAX_SIZE_BYTES = 5_242_880;
+
+		/**
+		 * @param {string} filePath
+		 * @returns {boolean}
+		 */
+		function isAbsolutePath(filePath) {
+			return filePath.startsWith("file://") || /^\//.test(filePath) || /^[A-Za-z]:[\\/]/.test(filePath);
+		}
+
+		/**
+		 * @param {string} filePath
+		 * @returns {string}
+		 */
+		function toFileHref(filePath) {
+			if (filePath.startsWith("file://")) {
+				return filePath;
+			}
+
+			if (/^[A-Za-z]:[\\/]/.test(filePath)) {
+				const normalized = filePath.replace(/\\/g, "/");
+				return `file:///${encodeURI(normalized)}`;
+			}
+
+			return `file://${encodeURI(filePath)}`;
+		}
+
+		/**
+		 * @returns {Promise<FileSystemDirectoryHandle | null>}
+		 */
+		async function resolveBaseDirectoryHandle() {
+			const existing = deps.getLinkBaseDirectoryHandle();
+			if (existing) {
+				return existing;
+			}
+
+			const windowAny = /** @type {any} */ (window);
+			if (typeof windowAny.showDirectoryPicker !== "function") {
+				deps.setFormStatus("相対パスリンクには基準フォルダが必要ですが、この環境はフォルダ選択APIに未対応です。");
+				return null;
+			}
+
+			try {
+				const picked = await windowAny.showDirectoryPicker({ id: "mito-link-base" });
+				deps.setLinkBaseDirectoryHandle(picked);
+				deps.setFormStatus(`リンク基準フォルダを設定しました: ${picked.name}`);
+				return picked;
+			} catch (error) {
+				if (error && typeof error === "object" && "name" in error && error.name === "AbortError") {
+					return null;
+				}
+
+				console.error("Failed to pick base directory", error);
+				deps.setFormStatus("リンク基準フォルダの選択に失敗しました。");
+				return null;
+			}
+		}
+
+		/**
+		 * @param {FileSystemDirectoryHandle} baseDirectory
+		 * @param {string} relativePath
+		 * @returns {Promise<FileSystemFileHandle | null>}
+		 */
+		async function resolveRelativeFileHandle(baseDirectory, relativePath) {
+			const cleaned = relativePath.replace(/\\/g, "/").trim();
+			const segments = cleaned.split("/").filter((segment) => segment.length > 0 && segment !== ".");
+			if (segments.length === 0 || segments.some((segment) => segment === "..")) {
+				return null;
+			}
+
+			let currentDirectory = baseDirectory;
+			for (let index = 0; index < segments.length - 1; index += 1) {
+				currentDirectory = await currentDirectory.getDirectoryHandle(segments[index]);
+			}
+
+			const fileName = segments[segments.length - 1];
+			return await currentDirectory.getFileHandle(fileName);
+		}
+
+		/**
+		 * @param {string} mimeType
+		 * @returns {boolean}
+		 */
+		function isTextLikeMimeType(mimeType) {
+			if (!mimeType) {
+				return true;
+			}
+
+			return mimeType.startsWith("text/")
+				|| mimeType === "application/json"
+				|| mimeType === "application/xml"
+				|| mimeType === "application/javascript"
+				|| mimeType === "application/x-javascript";
+		}
+
+		/**
+		 * @param {FileSystemFileHandle} fileHandle
+		 * @param {string} labelPath
+		 * @returns {Promise<{ title: string, body: string, imageUrl?: string } | null>}
+		 */
+		async function buildFilePreviewFromHandle(fileHandle, labelPath) {
+			const file = await fileHandle.getFile();
+			if (file.type.startsWith("image/")) {
+				if (file.size > IMAGE_PREVIEW_MAX_SIZE_BYTES) {
+					return {
+						title: `画像ファイル: ${labelPath}`,
+						body: `画像サイズが大きいためプレビューを省略しました (${Math.round(file.size / 1024)}KB)。`,
+					};
+				}
+
+				return {
+					title: `画像ファイル: ${labelPath}`,
+					body: labelPath,
+					imageUrl: URL.createObjectURL(file),
+				};
+			}
+
+			if (!isTextLikeMimeType(file.type)) {
+				return {
+					title: `ファイル: ${labelPath}`,
+					body: "バイナリ形式のため本文プレビューは表示できません。",
+				};
+			}
+
+			if (file.size > FILE_PREVIEW_MAX_SIZE_BYTES) {
+				return {
+					title: `ファイル: ${labelPath}`,
+					body: `ファイルサイズが大きいためプレビューを省略しました (${Math.round(file.size / 1024)}KB)。`,
+				};
+			}
+
+			const text = (await file.text()).replace(/\r\n?/g, "\n").trim();
+			if (!text) {
+				return {
+					title: `ファイル: ${labelPath}`,
+					body: "空ファイルです。",
+				};
+			}
+
+			const excerpt = text.slice(0, FILE_PREVIEW_MAX_CHARS);
+			const suffix = text.length > FILE_PREVIEW_MAX_CHARS ? "..." : "";
+			return {
+				title: `ファイル: ${labelPath}`,
+				body: `${excerpt}${suffix}`,
+			};
+		}
+
 		/**
 		 * Initialize tree/renderer/model/form bridge helpers from external module.
 		 */
@@ -159,155 +308,6 @@
 			const createRendererComposer = /** @type {any} */ (globalObject).createRendererComposer;
 			if (typeof createRendererComposer !== "function") {
 				return;
-			}
-
-			/**
-			 * @param {string} filePath
-			 * @returns {boolean}
-			 */
-			function isAbsolutePath(filePath) {
-				return filePath.startsWith("file://") || /^\//.test(filePath) || /^[A-Za-z]:[\\/]/.test(filePath);
-			}
-
-			const FILE_PREVIEW_MAX_SIZE_BYTES = 512_000;
-			const FILE_PREVIEW_MAX_CHARS = 260;
-			const IMAGE_PREVIEW_MAX_SIZE_BYTES = 5_242_880;
-
-			/**
-			 * @param {string} filePath
-			 * @returns {string}
-			 */
-			function toFileHref(filePath) {
-				if (filePath.startsWith("file://")) {
-					return filePath;
-				}
-
-				if (/^[A-Za-z]:[\\/]/.test(filePath)) {
-					const normalized = filePath.replace(/\\/g, "/");
-					return `file:///${encodeURI(normalized)}`;
-				}
-
-				return `file://${encodeURI(filePath)}`;
-			}
-
-			/**
-			 * @returns {Promise<FileSystemDirectoryHandle | null>}
-			 */
-			async function resolveBaseDirectoryHandle() {
-				const existing = deps.getLinkBaseDirectoryHandle();
-				if (existing) {
-					return existing;
-				}
-
-				const windowAny = /** @type {any} */ (window);
-				if (typeof windowAny.showDirectoryPicker !== "function") {
-					deps.setFormStatus("相対パスリンクには基準フォルダが必要ですが、この環境はフォルダ選択APIに未対応です。");
-					return null;
-				}
-
-				try {
-					const picked = await windowAny.showDirectoryPicker({ id: "mito-link-base" });
-					deps.setLinkBaseDirectoryHandle(picked);
-					deps.setFormStatus(`リンク基準フォルダを設定しました: ${picked.name}`);
-					return picked;
-				} catch (error) {
-					if (error && typeof error === "object" && "name" in error && error.name === "AbortError") {
-						return null;
-					}
-
-					console.error("Failed to pick base directory", error);
-					deps.setFormStatus("リンク基準フォルダの選択に失敗しました。");
-					return null;
-				}
-			}
-
-			/**
-			 * @param {FileSystemDirectoryHandle} baseDirectory
-			 * @param {string} relativePath
-			 * @returns {Promise<FileSystemFileHandle | null>}
-			 */
-			async function resolveRelativeFileHandle(baseDirectory, relativePath) {
-				const cleaned = relativePath.replace(/\\/g, "/").trim();
-				const segments = cleaned.split("/").filter((segment) => segment.length > 0 && segment !== ".");
-				if (segments.length === 0 || segments.some((segment) => segment === "..")) {
-					return null;
-				}
-
-				let currentDirectory = baseDirectory;
-				for (let index = 0; index < segments.length - 1; index += 1) {
-					currentDirectory = await currentDirectory.getDirectoryHandle(segments[index]);
-				}
-
-				const fileName = segments[segments.length - 1];
-				return await currentDirectory.getFileHandle(fileName);
-			}
-
-			/**
-			 * @param {string} mimeType
-			 * @returns {boolean}
-			 */
-			function isTextLikeMimeType(mimeType) {
-				if (!mimeType) {
-					return true;
-				}
-
-				return mimeType.startsWith("text/")
-					|| mimeType === "application/json"
-					|| mimeType === "application/xml"
-					|| mimeType === "application/javascript"
-					|| mimeType === "application/x-javascript";
-			}
-
-			/**
-			 * @param {FileSystemFileHandle} fileHandle
-			 * @param {string} labelPath
-			 * @returns {Promise<{ title: string, body: string, imageUrl?: string } | null>}
-			 */
-			async function buildFilePreviewFromHandle(fileHandle, labelPath) {
-				const file = await fileHandle.getFile();
-				if (file.type.startsWith("image/")) {
-					if (file.size > IMAGE_PREVIEW_MAX_SIZE_BYTES) {
-						return {
-							title: `画像ファイル: ${labelPath}`,
-							body: `画像サイズが大きいためプレビューを省略しました (${Math.round(file.size / 1024)}KB)。`,
-						};
-					}
-
-					return {
-						title: `画像ファイル: ${labelPath}`,
-						body: labelPath,
-						imageUrl: URL.createObjectURL(file),
-					};
-				}
-
-				if (!isTextLikeMimeType(file.type)) {
-					return {
-						title: `ファイル: ${labelPath}`,
-						body: "バイナリ形式のため本文プレビューは表示できません。",
-					};
-				}
-
-				if (file.size > FILE_PREVIEW_MAX_SIZE_BYTES) {
-					return {
-						title: `ファイル: ${labelPath}`,
-						body: `ファイルサイズが大きいためプレビューを省略しました (${Math.round(file.size / 1024)}KB)。`,
-					};
-				}
-
-				const text = (await file.text()).replace(/\r\n?/g, "\n").trim();
-				if (!text) {
-					return {
-						title: `ファイル: ${labelPath}`,
-						body: "空ファイルです。",
-					};
-				}
-
-				const excerpt = text.slice(0, FILE_PREVIEW_MAX_CHARS);
-				const suffix = text.length > FILE_PREVIEW_MAX_CHARS ? "..." : "";
-				return {
-					title: `ファイル: ${labelPath}`,
-					body: `${excerpt}${suffix}`,
-				};
 			}
 
 			deps.setRendererApi(createRendererComposer({

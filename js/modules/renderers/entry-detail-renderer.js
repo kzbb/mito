@@ -14,24 +14,21 @@
 	 * }} deps
 	 */
 	function createEntryDetailRenderer(deps) {
-		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
-		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
 		const createLinkPreviewHandler = /** @type {any} */ (globalObject).createLinkPreviewHandler;
 		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
 		const rendererFallbacks = typeof createRendererFallbacks === "function"
 			? createRendererFallbacks()
 			: null;
-		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (calendarUtils?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] })));
+		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
 		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
-			?? (calendarUtils?.resolveTimelineValues
-				?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-					/** @type {Record<string, string>} */
-					const values = {};
-					for (const header of headers) {
-						values[header] = "";
-					}
-					return values;
-				}));
+			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
+				/** @type {Record<string, string>} */
+				const values = {};
+				for (const header of headers) {
+					values[header] = "";
+				}
+				return values;
+			});
 		const renderMarkdownToHtml = rendererFallbacks?.renderMarkdownToHtml
 			?? ((/** @type {string} */ source) => source
 				.replace(/&/g, "&amp;")
@@ -40,28 +37,8 @@
 				.replace(/\"/g, "&quot;")
 				.replace(/'/g, "&#39;")
 				.replace(/\n/g, "<br>"));
-
-		/**
-		 * @param {string} name
-		 * @returns {any | null}
-		 */
-		function resolveEntryByName(name) {
-			if (!name) {
-				return null;
-			}
-
-			const normalized = name.trim().toLocaleLowerCase("ja");
-			const currentData = deps.getCurrentData();
-			const activeEntries = Array.isArray(currentData?.active) ? currentData.active : [];
-			for (const candidate of activeEntries) {
-				const candidateName = deps.resolveEntryName(candidate).trim().toLocaleLowerCase("ja");
-				if (candidateName === normalized) {
-					return candidate;
-				}
-			}
-
-			return null;
-		}
+		const resolveEntryByName = rendererFallbacks?.makeEntryByNameResolver(deps.getCurrentData, deps.resolveEntryName)
+			?? (() => null);
 
 		const linkPreviewHandler = typeof createLinkPreviewHandler === "function"
 			? createLinkPreviewHandler({
