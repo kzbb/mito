@@ -1,0 +1,644 @@
+{
+  "project": "米ソ宇宙開発競争年表",
+  "generatedAt": "2026-03-10T00:00:00.000Z",
+  "updatedAt": "2026-03-26T00:00:00.000Z",
+  "version": 1,
+  "calendar": {
+    "csvText": "西暦,和暦\n1868,慶応4年/明治元年\n1869,明治2年\n1870,明治3年\n1871,明治4年\n1872,明治5年\n1873,明治6年\n1874,明治7年\n1875,明治8年\n1876,明治9年\n1877,明治10年\n1878,明治11年\n1879,明治12年\n1880,明治13年\n1881,明治14年\n1882,明治15年\n1883,明治16年\n1884,明治17年\n1885,明治18年\n1886,明治19年\n1887,明治20年\n1888,明治21年\n1889,明治22年\n1890,明治23年\n1891,明治24年\n1892,明治25年\n1893,明治26年\n1894,明治27年\n1895,明治28年\n1896,明治29年\n1897,明治30年\n1898,明治31年\n1899,明治32年\n1900,明治33年\n1901,明治34年\n1902,明治35年\n1903,明治36年\n1904,明治37年\n1905,明治38年\n1906,明治39年\n1907,明治40年\n1908,明治41年\n1909,明治42年\n1910,明治43年\n1911,明治44年\n1912,明治45年/大正元年\n1913,大正2年\n1914,大正3年\n1915,大正4年\n1916,大正5年\n1917,大正6年\n1918,大正7年\n1919,大正8年\n1920,大正9年\n1921,大正10年\n1922,大正11年\n1923,大正12年\n1924,大正13年\n1925,大正14年\n1926,大正15年/昭和元年\n1927,昭和2年\n1928,昭和3年\n1929,昭和4年\n1930,昭和5年\n1931,昭和6年\n1932,昭和7年\n1933,昭和8年\n1934,昭和9年\n1935,昭和10年\n1936,昭和11年\n1937,昭和12年\n1938,昭和13年\n1939,昭和14年\n1940,昭和15年\n1941,昭和16年\n1942,昭和17年\n1943,昭和18年\n1944,昭和19年\n1945,昭和20年\n1946,昭和21年\n1947,昭和22年\n1948,昭和23年\n1949,昭和24年\n1950,昭和25年\n1951,昭和26年\n1952,昭和27年\n1953,昭和28年\n1954,昭和29年\n1955,昭和30年\n1956,昭和31年\n1957,昭和32年\n1958,昭和33年\n1959,昭和34年\n1960,昭和35年\n1961,昭和36年\n1962,昭和37年\n1963,昭和38年\n1964,昭和39年\n1965,昭和40年\n1966,昭和41年\n1967,昭和42年\n1968,昭和43年\n1969,昭和44年\n1970,昭和45年\n1971,昭和46年\n1972,昭和47年\n1973,昭和48年\n1974,昭和49年\n1975,昭和50年\n1976,昭和51年\n1977,昭和52年\n1978,昭和53年\n1979,昭和54年\n1980,昭和55年\n1981,昭和56年\n1982,昭和57年\n1983,昭和58年\n1984,昭和59年\n1985,昭和60年\n1986,昭和61年\n1987,昭和62年\n1988,昭和63年\n1989,昭和64年/平成元年\n1990,平成2年\n1991,平成3年\n1992,平成4年\n1993,平成5年\n1994,平成6年\n1995,平成7年\n1996,平成8年\n1997,平成9年\n1998,平成10年\n1999,平成11年\n2000,平成12年\n2001,平成13年\n2002,平成14年\n2003,平成15年\n2004,平成16年\n2005,平成17年\n2006,平成18年\n2007,平成19年\n2008,平成20年\n2009,平成21年\n2010,平成22年\n2011,平成23年\n2012,平成24年\n2013,平成25年\n2014,平成26年\n2015,平成27年\n2016,平成28年\n2017,平成29年\n2018,平成30年\n2019,平成31年/令和元年\n2020,令和2年\n2021,令和3年\n2022,令和4年\n2023,令和5年\n2024,令和6年\n2025,令和7年\n2026,令和8年"
+  },
+  "settings": {
+    "focusCategory": "アメリカ,ソ連,世界情勢",
+    "dashboardLabel": "年表"
+  },
+  "active": [
+    {
+      "id": 1,
+      "category": "ソ連",
+      "name": "ツィオルコフスキー、ロケット方程式を発表",
+      "dateCalendar": {
+        "西暦": "1903",
+        "和暦": "明治36年"
+      },
+      "description": "ロシアの科学者コンスタンチン・ツィオルコフスキーが論文『反作用利器による宇宙空間の探究』でロケット推進の基本方程式（ツィオルコフスキーの公式）を発表。宇宙飛行に必要な速度を数学的に示した、宇宙工学の原点。\n[https://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation Tsiolkovsky rocket equation (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 2,
+      "category": "アメリカ",
+      "name": "ゴダード、世界初の液体燃料ロケット打ち上げ",
+      "dateCalendar": {
+        "西暦": "1926",
+        "和暦": "大正15年"
+      },
+      "description": "3月16日、ロバート・ゴダードがマサチューセッツ州オーバーンで世界初の液体燃料ロケットの発射に成功。高度約12m、飛行時間2.5秒。ガソリンと液体酸素を使用。近代ロケット工学の実証的出発点。\n[https://en.wikipedia.org/wiki/Robert_H._Goddard Robert H. Goddard (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 3,
+      "category": "世界情勢",
+      "name": "V-2ロケット初の成功飛行",
+      "dateCalendar": {
+        "西暦": "1942",
+        "和暦": "昭和17年"
+      },
+      "description": "10月3日、ドイツ・ペーネミュンデでヴェルナー・フォン・ブラウン率いるチームがA-4（V-2）ロケットの発射試験に成功。高度84.5kmに到達。世界初の大型液体燃料弾道ミサイルであり、戦後の米ソ両国のロケット開発の直接的基盤となった。\n[https://en.wikipedia.org/wiki/V-2_rocket V-2 rocket (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 4,
+      "category": "アメリカ",
+      "name": "ペーパークリップ作戦",
+      "dateCalendar": {
+        "西暦": "1945",
+        "和暦": "昭和20年"
+      },
+      "description": "米軍がドイツのロケット技術者約1,600人を接収。フォン・ブラウンら中心人物はアメリカに移送され、後の陸軍弾道ミサイル開発局（ABMA）、さらにNASAマーシャル宇宙飛行センターの中核となった。\n[https://en.wikipedia.org/wiki/Operation_Paperclip Operation Paperclip (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 5,
+      "category": "ソ連",
+      "name": "ソ連、V-2技術の接収と再現",
+      "dateCalendar": {
+        "西暦": "1945",
+        "和暦": "昭和20年"
+      },
+      "description": "ソ連もドイツからV-2の図面・部品・技術者を接収。セルゲイ・コロリョフが東ドイツに派遣されV-2の復元に従事。この成果がR-1～R-7ロケット開発の出発点となった。\n[https://en.wikipedia.org/wiki/Soviet_space_program Soviet space program (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 6,
+      "category": "世界情勢",
+      "name": "冷戦の開始",
+      "dateCalendar": {
+        "西暦": "1947",
+        "和暦": "昭和22年"
+      },
+      "description": "トルーマン・ドクトリンの発表とマーシャル・プランの始動により、米ソ間の政治的・軍事的対立構造（冷戦）が明確化。宇宙開発競争の政治的背景を形成した。\n[https://en.wikipedia.org/wiki/Cold_War Cold War (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 7,
+      "category": "ソ連",
+      "name": "ソ連初の核実験成功",
+      "dateCalendar": {
+        "西暦": "1949",
+        "和暦": "昭和24年"
+      },
+      "description": "8月29日、RDS-1の実験成功により、ソ連がアメリカに続く第2の核保有国となった。核弾頭運搬手段としてのICBM開発が加速し、ロケット技術への投資が急増する契機。\n[https://en.wikipedia.org/wiki/RDS-1 RDS-1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 8,
+      "category": "世界情勢",
+      "name": "米ソ両国が人工衛星計画を発表",
+      "dateCalendar": {
+        "西暦": "1955",
+        "和暦": "昭和30年"
+      },
+      "description": "国際地球観測年（IGY, 1957-58）に向け、アメリカがヴァンガード計画を、ソ連が独自の衛星打ち上げ計画を相次いで発表。宇宙開発競争の公式な幕開けとされる。\n[https://en.wikipedia.org/wiki/Space_Race Space Race (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 9,
+      "category": "ソ連",
+      "name": "R-7、世界初のICBM発射試験成功",
+      "dateCalendar": {
+        "西暦": "1957",
+        "和暦": "昭和32年",
+        "月": "8月"
+      },
+      "description": "8月21日、コロリョフ設計のR-7セミョールカが約6,000kmの飛行に成功し、世界初のICBMとなった。R-7はその後スプートニク、ボストーク、ソユーズなど宇宙ロケットの基盤となる。\n[https://en.wikipedia.org/wiki/R-7_Semyorka R-7 Semyorka (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 10,
+      "category": "ソ連",
+      "name": "スプートニク1号 — 世界初の人工衛星",
+      "dateCalendar": {
+        "西暦": "1957",
+        "和暦": "昭和32年",
+        "月": "10月"
+      },
+      "description": "10月4日、R-7ロケットにより質量83.6kgの人工衛星スプートニク1号を地球周回軌道に投入。約90分で地球を1周し、無線信号を送信した。西側に「スプートニク・ショック」を引き起こし、宇宙開発競争が本格化。\n[https://en.wikipedia.org/wiki/Sputnik_1 Sputnik 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 11,
+      "category": "ソ連",
+      "name": "スプートニク2号 — ライカ、初の宇宙生物",
+      "dateCalendar": {
+        "西暦": "1957",
+        "和暦": "昭和32年",
+        "月": "11月"
+      },
+      "description": "11月3日、犬のライカを搭載したスプートニク2号を打ち上げ。初めて生物を軌道に送った。帰還手段はなく、ライカは打ち上げ後まもなく死亡した。\n[https://en.wikipedia.org/wiki/Sputnik_2 Sputnik 2 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 12,
+      "category": "アメリカ",
+      "name": "エクスプローラー1号 — 米国初の人工衛星",
+      "dateCalendar": {
+        "西暦": "1958",
+        "和暦": "昭和33年",
+        "月": "1月"
+      },
+      "description": "1月31日、フォン・ブラウンのジュピターCロケットによりエクスプローラー1号を打ち上げ。ヴァン・アレン帯を発見する科学的成果を挙げた。先行のヴァンガードTV3は12月に打ち上げ失敗しており、米国の宇宙開発は出遅れからの巻き返しであった。\n[https://en.wikipedia.org/wiki/Explorer_1 Explorer 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 13,
+      "category": "アメリカ",
+      "name": "NASA設立",
+      "dateCalendar": {
+        "西暦": "1958",
+        "和暦": "昭和33年",
+        "月": "10月"
+      },
+      "description": "10月1日、アメリカ航空宇宙局（NASA）が発足。前身のNACA（国家航空諮問委員会）を改組し、民間主導の宇宙開発を推進する体制が整った。\n[https://en.wikipedia.org/wiki/NASA NASA (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 14,
+      "category": "ソ連",
+      "name": "ルナ1号 — 初の月近傍通過",
+      "dateCalendar": {
+        "西暦": "1959",
+        "和暦": "昭和34年",
+        "月": "1月"
+      },
+      "description": "1月2日打ち上げ。月面衝突を目指したが約6,000km離れて通過し、太陽周回軌道に入った。地球の重力圏を脱出した最初の人工物体。\n[https://en.wikipedia.org/wiki/Luna_1 Luna 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 15,
+      "category": "ソ連",
+      "name": "ルナ2号 — 初の月面到達",
+      "dateCalendar": {
+        "西暦": "1959",
+        "和暦": "昭和34年",
+        "月": "9月"
+      },
+      "description": "9月12日打ち上げ、14日に月面に衝突。人工物体として初めて月面に到達した。\n[https://en.wikipedia.org/wiki/Luna_2 Luna 2 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 16,
+      "category": "ソ連",
+      "name": "ルナ3号 — 月の裏側を初撮影",
+      "dateCalendar": {
+        "西暦": "1959",
+        "和暦": "昭和34年",
+        "月": "10月"
+      },
+      "description": "10月4日打ち上げ。月の裏側を撮影し、人類が初めてその姿を見た。解像度は低かったが、表面の地形が表側と大きく異なることが判明した。\n[https://en.wikipedia.org/wiki/Luna_3 Luna 3 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 17,
+      "category": "ソ連",
+      "name": "ボストーク1号 — ガガーリン、人類初の宇宙飛行",
+      "dateCalendar": {
+        "西暦": "1961",
+        "和暦": "昭和36年",
+        "月": "4月"
+      },
+      "description": "4月12日、ユーリ・ガガーリンがボストーク1号で地球を1周し、人類初の有人宇宙飛行を達成。飛行時間108分。「地球は青かった」の言葉で知られる。\n[https://en.wikipedia.org/wiki/Vostok_1 Vostok 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 18,
+      "category": "アメリカ",
+      "name": "フリーダム7 — シェパード、米国初の有人宇宙飛行",
+      "dateCalendar": {
+        "西暦": "1961",
+        "和暦": "昭和36年",
+        "月": "5月"
+      },
+      "description": "5月5日、アラン・シェパードがマーキュリー・レッドストーン3号（フリーダム7）で弾道飛行を行い、米国初の宇宙飛行士となった。飛行時間約15分、軌道周回はせず。\n[https://en.wikipedia.org/wiki/Mercury-Redstone_3 Mercury-Redstone 3 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 19,
+      "category": "アメリカ",
+      "name": "ケネディ大統領「月に人を送る」演説",
+      "dateCalendar": {
+        "西暦": "1961",
+        "和暦": "昭和36年",
+        "月": "5月"
+      },
+      "description": "5月25日、ケネディ大統領が連邦議会で「1960年代中に人間を月に着陸させ、安全に帰還させる」と宣言。アポロ計画の政治的起点となった。\n[https://en.wikipedia.org/wiki/We_choose_to_go_to_the_Moon We choose to go to the Moon (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 20,
+      "category": "ソ連",
+      "name": "ボストーク2号 — ティトフ、初の1日超宇宙滞在",
+      "dateCalendar": {
+        "西暦": "1961",
+        "和暦": "昭和36年",
+        "月": "8月"
+      },
+      "description": "8月6日、ゲルマン・ティトフが地球を17周し、初めて宇宙で1日以上を過ごした。25歳で最年少の宇宙飛行士記録も樹立。\n[https://en.wikipedia.org/wiki/Vostok_2 Vostok 2 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 21,
+      "category": "アメリカ",
+      "name": "フレンドシップ7 — グレン、米国初の軌道周回飛行",
+      "dateCalendar": {
+        "西暦": "1962",
+        "和暦": "昭和37年",
+        "月": "2月"
+      },
+      "description": "2月20日、ジョン・グレンがマーキュリー・アトラス6号で地球を3周し、米国初の地球周回飛行を達成。国民的英雄となった。\n[https://en.wikipedia.org/wiki/Mercury-Atlas_6 Mercury-Atlas 6 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 22,
+      "category": "世界情勢",
+      "name": "キューバ危機",
+      "dateCalendar": {
+        "西暦": "1962",
+        "和暦": "昭和37年",
+        "月": "10月"
+      },
+      "description": "10月、キューバへのソ連ミサイル配備をめぐり米ソが核戦争の瀬戸際に。冷戦の緊張が極限に達し、ICBMとロケット技術の戦略的重要性が改めて浮き彫りになった。\n[https://en.wikipedia.org/wiki/Cuban_Missile_Crisis Cuban Missile Crisis (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 23,
+      "category": "ソ連",
+      "name": "ボストーク6号 — テレシコワ、女性初の宇宙飛行",
+      "dateCalendar": {
+        "西暦": "1963",
+        "和暦": "昭和38年",
+        "月": "6月"
+      },
+      "description": "6月16日、ワレンチナ・テレシコワが女性として初めて宇宙へ。地球を48周し、約3日間滞在した。\n[https://en.wikipedia.org/wiki/Vostok_6 Vostok 6 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 24,
+      "category": "世界情勢",
+      "name": "ケネディ大統領暗殺",
+      "dateCalendar": {
+        "西暦": "1963",
+        "和暦": "昭和38年",
+        "月": "11月"
+      },
+      "description": "11月22日、ダラスでケネディ大統領が暗殺される。後継のジョンソン大統領はアポロ計画を継承・推進した。\n[https://en.wikipedia.org/wiki/Assassination_of_John_F._Kennedy Assassination of JFK (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 25,
+      "category": "アメリカ",
+      "name": "レンジャー7号 — 月面の高精細撮影に初成功",
+      "dateCalendar": {
+        "西暦": "1964",
+        "和暦": "昭和39年",
+        "月": "7月"
+      },
+      "description": "7月28日打ち上げ、31日に月面衝突。衝突までの最後の数分間に4,300枚以上の写真を撮影し、月面の詳細な地形を初めて明らかにした。先行の6機は失敗しており、7号で初の完全成功。\n[https://en.wikipedia.org/wiki/Ranger_7 Ranger 7 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 26,
+      "category": "ソ連",
+      "name": "ボスホート1号 — 初の多人数宇宙飛行",
+      "dateCalendar": {
+        "西暦": "1964",
+        "和暦": "昭和39年",
+        "月": "10月"
+      },
+      "description": "10月12日、コマロフ、フェオクティストフ、エゴロフの3名が搭乗し初の複数乗員飛行を達成。宇宙服なしで搭乗するなど、ジェミニ計画に先んじるための急造設計であった。\n[https://en.wikipedia.org/wiki/Voskhod_1 Voskhod 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 27,
+      "category": "ソ連",
+      "name": "ボスホート2号 — レオーノフ、人類初の船外活動",
+      "dateCalendar": {
+        "西暦": "1965",
+        "和暦": "昭和40年",
+        "月": "3月"
+      },
+      "description": "3月18日、アレクセイ・レオーノフが約12分間の船外活動（EVA）を実施し、人類初の「宇宙遊泳」を達成。帰還時には着陸地点が大きくずれ、雪の森林で1日間救助を待つ事態となった。\n[https://en.wikipedia.org/wiki/Voskhod_2 Voskhod 2 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 28,
+      "category": "アメリカ",
+      "name": "ジェミニ3号 — 初の有人ジェミニ飛行",
+      "dateCalendar": {
+        "西暦": "1965",
+        "和暦": "昭和40年",
+        "月": "3月"
+      },
+      "description": "3月23日、グリソムとヤングが搭乗。米国初の2人乗り宇宙船であり、初めてスラスタによる軌道変更を行った。\n[https://en.wikipedia.org/wiki/Gemini_3 Gemini 3 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 29,
+      "category": "アメリカ",
+      "name": "ジェミニ4号 — ホワイト、米国初の船外活動",
+      "dateCalendar": {
+        "西暦": "1965",
+        "和暦": "昭和40年",
+        "月": "6月"
+      },
+      "description": "6月3日、エドワード・ホワイトが約20分間の船外活動を実施し、米国初のEVAを達成。レオーノフの記録から約2.5か月遅れ。\n[https://en.wikipedia.org/wiki/Gemini_4 Gemini 4 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 30,
+      "category": "アメリカ",
+      "name": "ジェミニ6A/7号 — 初のランデブー飛行",
+      "dateCalendar": {
+        "西暦": "1965",
+        "和暦": "昭和40年",
+        "月": "12月"
+      },
+      "description": "12月、ジェミニ7号（ボーマン、ラベル）が14日間の長期飛行記録を樹立。その軌道上でジェミニ6A号（シラー、スタフォード）と世界初の宇宙ランデブーに成功。\n[https://en.wikipedia.org/wiki/Gemini_6A Gemini 6A (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 31,
+      "category": "ソ連",
+      "name": "コロリョフ死去",
+      "dateCalendar": {
+        "西暦": "1966",
+        "和暦": "昭和41年",
+        "月": "1月"
+      },
+      "description": "1月14日、ソ連宇宙開発の総設計師セルゲイ・コロリョフが手術中に死去。後継者はコロリョフほどの政治的影響力を持たず、ソ連の有人月計画は以後混乱を深めた。\n[https://en.wikipedia.org/wiki/Sergei_Korolev Sergei Korolev (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 32,
+      "category": "ソ連",
+      "name": "ルナ9号 — 初の月面軟着陸",
+      "dateCalendar": {
+        "西暦": "1966",
+        "和暦": "昭和41年",
+        "月": "2月"
+      },
+      "description": "2月3日、ルナ9号が月面への軟着陸に世界で初めて成功し、月面からの写真を送信した。月面が細かい塵に覆われ宇宙船が沈むという仮説を否定する成果となった。\n[https://en.wikipedia.org/wiki/Luna_9 Luna 9 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 33,
+      "category": "アメリカ",
+      "name": "ジェミニ8号 — 初のドッキング成功",
+      "dateCalendar": {
+        "西暦": "1966",
+        "和暦": "昭和41年",
+        "月": "3月"
+      },
+      "description": "3月16日、アームストロングとスコットがアジェナ無人機とのドッキングに世界で初めて成功。直後にスラスタ異常で機体が回転し緊急帰還となったが、月着陸に不可欠な技術を実証した。\n[https://en.wikipedia.org/wiki/Gemini_8 Gemini 8 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 34,
+      "category": "ソ連",
+      "name": "ルナ10号 — 初の月周回衛星",
+      "dateCalendar": {
+        "西暦": "1966",
+        "和暦": "昭和41年",
+        "月": "3月"
+      },
+      "description": "3月31日打ち上げ、4月3日に月周回軌道に投入。人工物体として初めて月を周回し、月の重力場や放射線環境のデータを取得した。\n[https://en.wikipedia.org/wiki/Luna_10 Luna 10 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 35,
+      "category": "アメリカ",
+      "name": "サーベイヤー1号 — 米国初の月面軟着陸",
+      "dateCalendar": {
+        "西暦": "1966",
+        "和暦": "昭和41年",
+        "月": "6月"
+      },
+      "description": "5月30日打ち上げ、6月2日に嵐の大洋に軟着陸。11,000枚以上の画像を送信し、月面の強度が着陸機を支えられることを実証した。アポロ着陸地点選定に貢献。\n[https://en.wikipedia.org/wiki/Surveyor_1 Surveyor 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 36,
+      "category": "アメリカ",
+      "name": "アポロ1号火災事故",
+      "dateCalendar": {
+        "西暦": "1967",
+        "和暦": "昭和42年",
+        "月": "1月"
+      },
+      "description": "1月27日、ケープ・ケネディでの地上試験中に司令船内で火災が発生し、グリソム、ホワイト、チャフィーの3名が死亡。純酸素環境の危険性が明らかになり、宇宙船の大幅な再設計が行われた。\n[https://en.wikipedia.org/wiki/Apollo_1 Apollo 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 37,
+      "category": "ソ連",
+      "name": "ソユーズ1号 — コマロフ死亡事故",
+      "dateCalendar": {
+        "西暦": "1967",
+        "和暦": "昭和42年",
+        "月": "4月"
+      },
+      "description": "4月23日打ち上げ、24日帰還時にパラシュートが開かず墜落。ウラジーミル・コマロフが死亡し、宇宙飛行中の事故による初の犠牲者となった。ソユーズ計画は18か月間中断。\n[https://en.wikipedia.org/wiki/Soyuz_1 Soyuz 1 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 38,
+      "category": "世界情勢",
+      "name": "宇宙条約の発効",
+      "dateCalendar": {
+        "西暦": "1967",
+        "和暦": "昭和42年",
+        "月": "10月"
+      },
+      "description": "10月10日、「月その他の天体を含む宇宙空間の探査及び利用における国家活動を律する原則に関する条約」が発効。宇宙空間の非軍事利用、天体の領有禁止などを規定した。\n[https://en.wikipedia.org/wiki/Outer_Space_Treaty Outer Space Treaty (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 39,
+      "category": "ソ連",
+      "name": "ゾンド5号 — 初の月周回・地球帰還",
+      "dateCalendar": {
+        "西暦": "1968",
+        "和暦": "昭和43年",
+        "月": "9月"
+      },
+      "description": "9月15日打ち上げ。亀などの生物を搭載して月を周回し地球に帰還した最初の宇宙船。ソ連有人月周回の可能性を示唆し、NASAのアポロ8号計画を加速させた。\n[https://en.wikipedia.org/wiki/Zond_5 Zond 5 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 40,
+      "category": "アメリカ",
+      "name": "アポロ7号 — 初の有人アポロ飛行",
+      "dateCalendar": {
+        "西暦": "1968",
+        "和暦": "昭和43年",
+        "月": "10月"
+      },
+      "description": "10月11日打ち上げ。シラー、アイゼル、カニンガムの3名が11日間の地球周回飛行で再設計された司令船・機械船の性能を実証した。\n[https://en.wikipedia.org/wiki/Apollo_7 Apollo 7 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 41,
+      "category": "アメリカ",
+      "name": "アポロ8号 — 人類初の月周回飛行",
+      "dateCalendar": {
+        "西暦": "1968",
+        "和暦": "昭和43年",
+        "月": "12月"
+      },
+      "description": "12月21日打ち上げ。ボーマン、ラベル、アンダースの3名が人類として初めて月周回軌道に入り、月の裏側と「地球の出（Earthrise）」を目撃した。クリスマスイブの月軌道からの中継は世界中で視聴された。\n[https://en.wikipedia.org/wiki/Apollo_8 Apollo 8 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 42,
+      "category": "アメリカ",
+      "name": "アポロ9号 — 月着陸船の地球軌道試験",
+      "dateCalendar": {
+        "西暦": "1969",
+        "和暦": "昭和44年",
+        "月": "3月"
+      },
+      "description": "3月3日打ち上げ。マクディビット、スコット、シュワイカートが地球周回軌道上で月着陸船（LM）の分離・ランデブー・ドッキングを初めて試験。\n[https://en.wikipedia.org/wiki/Apollo_9 Apollo 9 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 43,
+      "category": "アメリカ",
+      "name": "アポロ10号 — 月着陸の「総合リハーサル」",
+      "dateCalendar": {
+        "西暦": "1969",
+        "和暦": "昭和44年",
+        "月": "5月"
+      },
+      "description": "5月18日打ち上げ。スタフォードとサーナンが月着陸船で月面上空約15kmまで降下し、着陸を除く全手順を検証した。\n[https://en.wikipedia.org/wiki/Apollo_10 Apollo 10 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 44,
+      "category": "ソ連",
+      "name": "N1ロケット爆発 — ソ連有人月計画の挫折",
+      "dateCalendar": {
+        "西暦": "1969",
+        "和暦": "昭和44年",
+        "月": "7月"
+      },
+      "description": "7月3日、有人月着陸用の超大型ロケットN1の2回目の打ち上げが発射台上で爆発。発射施設を壊滅させた。N1は計4回打ち上げられたがすべて失敗し、ソ連の有人月着陸は実現しなかった。\n[https://en.wikipedia.org/wiki/N1_(rocket) N1 rocket (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 45,
+      "category": "アメリカ",
+      "name": "アポロ11号 — 人類初の月面着陸",
+      "dateCalendar": {
+        "西暦": "1969",
+        "和暦": "昭和44年",
+        "月": "7月"
+      },
+      "description": "7月16日打ち上げ、20日にニール・アームストロングとバズ・オルドリンが月面（静かの海）に着陸。マイケル・コリンズは月周回軌道上の司令船で待機した。アームストロングの「一人の人間にとっては小さな一歩だが、人類にとっては偉大な飛躍」の言葉とともに、推定6億人以上がテレビ中継を視聴。ケネディの宣言から8年で目標を達成し、宇宙開発競争はアメリカの勝利に終わった。\n[https://en.wikipedia.org/wiki/Apollo_11 Apollo 11 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 46,
+      "category": "世界情勢",
+      "name": "第一次世界大戦開戦",
+      "dateCalendar": {
+        "西暦": "1914",
+        "和暦": "大正3年",
+        "月": "7月"
+      },
+      "description": "7月28日、オーストリア＝ハンガリーがセルビアに宣戦布告し開戦。航空機・化学兵器など新技術の軍事応用が加速した。敗戦国ドイツではヴェルサイユ条約の軍備制限下でロケット研究が進み、後のV-2開発へつながる技術的土壌が形成された。\n[https://en.wikipedia.org/wiki/World_War_I World War I (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 47,
+      "category": "世界情勢",
+      "name": "第一次世界大戦終戦",
+      "dateCalendar": {
+        "西暦": "1918",
+        "和暦": "大正7年",
+        "月": "11月"
+      },
+      "description": "11月11日、連合国とドイツの休戦協定が発効し大戦が終結。ヴェルサイユ条約でドイツの航空機・大砲開発が制限されたことが、逆にロケット兵器研究への注力を促し、ヴァイマル期からナチス期にかけてのペーネミュンデ計画へと結実した。\n[https://en.wikipedia.org/wiki/Armistice_of_11_November_1918 Armistice of 11 November 1918 (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 48,
+      "category": "世界情勢",
+      "name": "第二次世界大戦開戦",
+      "dateCalendar": {
+        "西暦": "1939",
+        "和暦": "昭和14年",
+        "月": "9月"
+      },
+      "description": "9月1日、ドイツがポーランドに侵攻し欧州大戦が開始。戦時下でドイツのV-2ロケット開発（1942年初成功）、米国のマンハッタン計画など、国家規模の軍事科学研究が推進された。\n[https://en.wikipedia.org/wiki/World_War_II World War II (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 49,
+      "category": "世界情勢",
+      "name": "第二次世界大戦終戦",
+      "dateCalendar": {
+        "西暦": "1945",
+        "和暦": "昭和20年",
+        "月": "9月"
+      },
+      "description": "9月2日、日本の降伏文書調印により大戦が正式に終結。米国はペーパークリップ作戦でフォン・ブラウンら独人技術者を獲得、ソ連もV-2の技術・設備を接収し、両国のロケット計画の直接的起点となった。\n[https://en.wikipedia.org/wiki/End_of_World_War_II_in_Asia End of World War II in Asia (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 50,
+      "category": "世界情勢",
+      "name": "朝鮮戦争開戦",
+      "dateCalendar": {
+        "西暦": "1950",
+        "和暦": "昭和25年",
+        "月": "6月"
+      },
+      "description": "6月25日、北朝鮮軍が38度線を越えて韓国に侵攻し開戦。冷戦下初の大規模代理戦争となり、米ソの軍事的対立が激化。核兵器運搬手段としてのICBM開発を双方が加速させる契機となった。\n[https://en.wikipedia.org/wiki/Korean_War Korean War (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 51,
+      "category": "世界情勢",
+      "name": "朝鮮戦争休戦",
+      "dateCalendar": {
+        "西暦": "1953",
+        "和暦": "昭和28年",
+        "月": "7月"
+      },
+      "description": "7月27日、板門店で休戦協定が調印。戦争は終結せず休戦状態が継続した。朝鮮半島の分断固定化により東西冷戦構造が強化され、米ソ双方が軍事技術・宇宙開発への投資を維持・拡大する基盤となった。\n[https://en.wikipedia.org/wiki/Korean_Armistice_Agreement Korean Armistice Agreement (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 52,
+      "category": "世界情勢",
+      "name": "ベトナム戦争開戦",
+      "dateCalendar": {
+        "西暦": "1955",
+        "和暦": "昭和30年",
+        "月": "11月"
+      },
+      "description": "1955年11月、米国がベトナム軍事援助顧問団（MAAG Vietnam）を設置し南ベトナムへの軍事支援を本格化。1964年のトンキン湾事件を経て米軍が大規模介入し、冷戦の代理戦争として泥沼化した。\n[https://en.wikipedia.org/wiki/Vietnam_War Vietnam War (Wikipedia)]",
+      "dashboardOrder": 0
+    },
+    {
+      "id": 53,
+      "category": "世界情勢",
+      "name": "ベトナム戦争終結",
+      "dateCalendar": {
+        "西暦": "1975",
+        "和暦": "昭和50年",
+        "月": "4月"
+      },
+      "description": "4月30日、北ベトナム軍がサイゴンを陥落させ戦争が終結。膨大な戦費は1960年代後半以降のNASA予算削減の一因となり、アポロ計画以降の有人宇宙探査の縮小に影響を及ぼした。\n[https://en.wikipedia.org/wiki/Fall_of_Saigon Fall of Saigon (Wikipedia)]",
+      "dashboardOrder": 0
+    }
+  ],
+  "deleted": []
+}
