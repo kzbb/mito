@@ -397,6 +397,37 @@
 			});
 		}
 
+		/** @param {string} str @returns {number} */
+		function displayWidth(str) {
+			let width = 0;
+			for (const ch of str) {
+				const cp = ch.codePointAt(0) ?? 0;
+				// 全角判定: CJK・ハングル・全角ASCII・囲み文字など
+				width += (cp >= 0x1100 && (
+					cp <= 0x115F || // ハングル字母
+					cp === 0x2329 || cp === 0x232A ||
+					(cp >= 0x2E80 && cp <= 0x303E) || // CJK部首・記号
+					(cp >= 0x3040 && cp <= 0xA4CF) || // ひらがな〜Yi
+					(cp >= 0xAC00 && cp <= 0xD7A3) || // ハングル音節
+					(cp >= 0xF900 && cp <= 0xFAFF) || // CJK互換漢字
+					(cp >= 0xFE10 && cp <= 0xFE1F) || // 縦書き形
+					(cp >= 0xFE30 && cp <= 0xFE4F) || // CJK互換形
+					(cp >= 0xFF00 && cp <= 0xFF60) || // 全角ASCII・半角カタカナ以外
+					(cp >= 0xFFE0 && cp <= 0xFFE6) || // 全角記号
+					(cp >= 0x1F300 && cp <= 0x1F64F) || // 絵文字
+					(cp >= 0x1F900 && cp <= 0x1F9FF) || // 補助絵文字
+					(cp >= 0x20000 && cp <= 0x2FFFD) || // CJK拡張B〜F
+					(cp >= 0x30000 && cp <= 0x3FFFD)    // CJK拡張G〜
+				)) ? 2 : 1;
+			}
+			return width;
+		}
+
+		/** @param {string} str @returns {number} */
+		function maxLineLength(str) {
+			return Math.max(0, ...str.split("\n").map((line) => displayWidth(line.trim())));
+		}
+
 		/**
 		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
 		 * @param {number} startRowIndex
@@ -408,11 +439,11 @@
 			const widths = [];
 			for (let colIndex = 0; colIndex < schema.headers.length; colIndex += 1) {
 				const header = schema.headers[colIndex];
-				let maxLength = String(header ?? "").trim().length;
+				let maxLength = maxLineLength(String(header ?? ""));
 
 				for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex += 1) {
 					const row = schema.rows[rowIndex] ?? {};
-					const valueLength = String(row[header] ?? "").trim().length;
+					const valueLength = maxLineLength(String(row[header] ?? ""));
 					maxLength = Math.max(maxLength, valueLength);
 				}
 
