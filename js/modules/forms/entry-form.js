@@ -156,9 +156,13 @@
 				const targetEntry = { id: nextId, ...entryPayload };
 				currentData.active.push(targetEntry);
 
+				enterEditMode(targetEntry);
 				deps.renderOutlineFromData(currentData);
 				if (wasDashboardView) {
-					deps.renderDashboardOverview(mainElement, currentData);
+					syncDashboardCardSelection(String(targetEntry.id ?? ""));
+					window.requestAnimationFrame(() => {
+						scrollToBalancedCardPosition(mainElement, targetEntry);
+					});
 					deps.setFormStatus("新しいエントリを追加し、年表表示を維持しました。");
 					return;
 				}
@@ -270,6 +274,45 @@
 			}
 
 			return "other";
+		}
+
+		/**
+		 * @param {string | null} entryId
+		 */
+		function syncDashboardCardSelection(entryId) {
+			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
+			if (!mainElement || !mainElement.classList.contains("dashboard-view")) {
+				return;
+			}
+
+			const normalizedEntryId = typeof entryId === "string" ? entryId.trim() : "";
+			const selector = normalizedEntryId.length > 0
+				? `.dashboard-entry-card[data-entry-id="${cssEscapeAttr(normalizedEntryId)}"]`
+				: "";
+			const selectedCard = selector.length > 0
+				? /** @type {HTMLElement | null} */ (mainElement.querySelector(selector))
+				: null;
+
+			for (const card of mainElement.querySelectorAll(".dashboard-entry-card")) {
+				if (!(card instanceof HTMLElement)) {
+					continue;
+				}
+
+				const isSelected = selectedCard === card;
+				card.classList.toggle("is-editing", isSelected);
+				if (!isSelected) {
+					card.blur();
+				}
+			}
+
+			const activeElement = document.activeElement;
+			if (
+				activeElement instanceof HTMLElement
+				&& mainElement.contains(activeElement)
+				&& (!selectedCard || (activeElement !== selectedCard && !selectedCard.contains(activeElement)))
+			) {
+				activeElement.blur();
+			}
 		}
 
 		/**
@@ -566,6 +609,7 @@
 			}
 
 			deps.setEditingEntryId(String(entry?.id ?? ""));
+			syncDashboardCardSelection(String(entry?.id ?? ""));
 			categoryInput.value = typeof entry?.category === "string" ? entry.category : "";
 			nameInput.value = typeof entry?.name === "string" ? entry.name : "";
 			orderInput.value = Number.isFinite(Number(entry?.dashboardOrder))
@@ -587,6 +631,7 @@
 		 */
 		function setFormModeAdd() {
 			deps.setEditingEntryId(null);
+			syncDashboardCardSelection(null);
 			syncDateInputs?.(null);
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			if (formElement) {
@@ -618,6 +663,7 @@
 			if (resetButton) {
 				resetButton.hidden = true;
 			}
+
 		}
 
 		return {

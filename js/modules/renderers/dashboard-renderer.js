@@ -6,6 +6,7 @@
 	 *   getCurrentData: () => any,
 	 *   getEditingEntryId: () => string | null,
 	 *   onEnterEditMode: (entry: any) => void,
+	 *   onStartNewEntry: () => void,
 	 *   onOpenEntryView: (entry: any) => void,
 	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
 	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>,
@@ -18,6 +19,7 @@
 		let bucketResizeObserver = null;
 		/** @type {{ top: number, left: number }} */
 		let lastTableScrollPosition = { top: 0, left: 0 };
+		let dashboardBackgroundClickHandlerInstalled = false;
 		const CRAMPED_THRESHOLD_REM = 17;
 
 		const createLinkPreviewHandler = /** @type {any} */ (globalObject).createLinkPreviewHandler;
@@ -61,6 +63,12 @@
 		 * @param {any} data
 		 */
 		function renderDashboardOverview(mainElement, data) {
+			for (const card of mainElement.querySelectorAll(".dashboard-entry-card")) {
+				if (card instanceof HTMLElement) {
+					card.blur();
+				}
+			}
+			enableDashboardBackgroundNewEntry(mainElement);
 			captureTableScrollPosition(mainElement);
 			teardownBucketObserver();
 			linkPreviewHandler?.hide();
@@ -180,6 +188,7 @@
 
 			const tableWrap = createDashboardTable(schema, categoryColumns, startRowIndex, endRowIndex);
 			mainElement.appendChild(tableWrap);
+			enableBlankAreaNewEntry(tableWrap);
 			restoreTableScrollPosition(tableWrap);
 			setupBucketObserver(tableWrap);
 			const editingId = deps.getEditingEntryId();
@@ -303,6 +312,89 @@
 			table.appendChild(tbody);
 			wrap.appendChild(table);
 			return wrap;
+		}
+
+		/**
+		 * @param {HTMLElement} mainElement
+		 */
+		function enableDashboardBackgroundNewEntry(mainElement) {
+			if (dashboardBackgroundClickHandlerInstalled) {
+				return;
+			}
+
+			dashboardBackgroundClickHandlerInstalled = true;
+			mainElement.addEventListener("click", (event) => {
+				if (!mainElement.classList.contains("dashboard-view")) {
+					return;
+				}
+
+				if (event.button !== 0) {
+					return;
+				}
+
+				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
+				if (target !== mainElement) {
+					return;
+				}
+
+				for (const card of mainElement.querySelectorAll(".dashboard-entry-card.is-editing")) {
+					if (card instanceof HTMLElement) {
+						card.classList.remove("is-editing");
+						card.blur();
+					}
+				}
+
+				const activeElement = document.activeElement;
+				if (activeElement instanceof HTMLElement && mainElement.contains(activeElement)) {
+					activeElement.blur();
+				}
+
+				deps.onStartNewEntry();
+			});
+		}
+
+		/**
+		 * @param {HTMLElement} tableWrap
+		 */
+		function enableBlankAreaNewEntry(tableWrap) {
+			const tbody = /** @type {HTMLTableSectionElement | null} */ (tableWrap.querySelector("tbody"));
+			if (!tbody) {
+				return;
+			}
+
+			tbody.addEventListener("click", (event) => {
+				if (event.button !== 0) {
+					return;
+				}
+
+				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
+				if (!target) {
+					return;
+				}
+
+				if (target.closest(".dashboard-entry-card")) {
+					return;
+				}
+
+				if (target.closest("a, button, input, textarea, select, label")) {
+					return;
+				}
+
+				event.preventDefault();
+				for (const card of tableWrap.querySelectorAll(".dashboard-entry-card.is-editing")) {
+					if (card instanceof HTMLElement) {
+						card.classList.remove("is-editing");
+						card.blur();
+					}
+				}
+
+				const activeElement = document.activeElement;
+				if (activeElement instanceof HTMLElement && tableWrap.contains(activeElement)) {
+					activeElement.blur();
+				}
+
+				deps.onStartNewEntry();
+			});
 		}
 
 		/**

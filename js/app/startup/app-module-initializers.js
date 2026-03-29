@@ -316,6 +316,9 @@
 				onEnterEditMode: (/** @type {any} */ entry) => {
 					deps.getBridgeApi()?.enterEditMode?.(entry);
 				},
+				onStartNewEntry: () => {
+					deps.getBridgeApi()?.setFormModeAdd?.();
+				},
 				onOpenEntryView: (/** @type {any} */ entry) => {
 					const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
 					if (!mainElement) {
