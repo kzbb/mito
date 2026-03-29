@@ -226,6 +226,7 @@
 
 			deps.setPersistenceApi(createPersistenceModule({
 				getCurrentData: deps.getCurrentData,
+				setCurrentData: deps.setCurrentData,
 				getCurrentFileName: deps.getCurrentFileName,
 				getCurrentFileHandle: deps.getCurrentFileHandle,
 				setCurrentFileName: deps.setCurrentFileName,

@@ -2,6 +2,20 @@
 
 (function registerDataModel(globalObject) {
 	/**
+	 * 現在時刻を日本標準時（JST, UTC+9）のISO 8601文字列で返す。
+	 * 例: "2026-03-29T19:00:00.000+09:00"
+	 * @returns {string}
+	 */
+	function nowJST() {
+		const now = new Date();
+		const jstOffsetMs = 9 * 60 * 60 * 1000;
+		const jst = new Date(now.getTime() + jstOffsetMs);
+		return jst.toISOString().replace("Z", "+09:00");
+	}
+
+	/** @type {any} */ (globalObject).nowJST = nowJST;
+
+	/**
 	 * アクティブエントリとプロジェクトメタデータを操作する純粋なデータヘルパーを生成する。
 	 */
 	function createDataModel() {

@@ -12,6 +12,8 @@
 	 *   renderFileLoadError: (message: string) => void
 	 * }} deps
 	 */
+	const nowJST = /** @type {any} */ (window).nowJST;
+
 	function createAppDocumentActions(deps) {
 		/**
 		 * @param {any} parsed
@@ -33,8 +35,8 @@
 
 			return {
 				project: normalizedProject,
-				generatedAt: typeof root.generatedAt === "string" ? root.generatedAt : new Date().toISOString(),
-				updatedAt: typeof root.updatedAt === "string" ? root.updatedAt : new Date().toISOString(),
+				generatedAt: typeof root.generatedAt === "string" ? root.generatedAt : nowJST(),
+				updatedAt: typeof root.updatedAt === "string" ? root.updatedAt : nowJST(),
 				version: Number.isFinite(Number(root.version)) ? Number(root.version) : 1,
 				calendar: normalizedCalendar,
 				settings: normalizedSettings,
@@ -190,8 +192,8 @@
 		function createNewDocumentTemplate() {
 			return {
 				project: "新規プロジェクト",
-				generatedAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
+				generatedAt: nowJST(),
+				updatedAt: nowJST(),
 				version: 1,
 				calendar: null,
 				settings: {

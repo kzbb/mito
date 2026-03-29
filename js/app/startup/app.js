@@ -227,9 +227,10 @@ function persistAutosaveSnapshot() {
 	}
 
 	try {
+		const nowJST = /** @type {any} */ (window).nowJST;
 		const snapshot = {
 			fileName: currentFileName,
-			updatedAt: new Date().toISOString(),
+			updatedAt: nowJST(),
 			data: currentData,
 		};
 		window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(snapshot));

@@ -4,6 +4,7 @@
 	/**
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   setCurrentData: (data: any) => void,
 	 *   getCurrentFileName: () => string,
 	 *   getCurrentFileHandle: () => any | null,
 	 *   setCurrentFileName: (fileName: string) => void,
@@ -72,7 +73,9 @@
 				return false;
 			}
 
-			const jsonText = JSON.stringify(currentData, null, 2);
+			const nowJST = /** @type {any} */ (window).nowJST;
+			const dataToSave = { ...currentData, updatedAt: nowJST() };
+			const jsonText = JSON.stringify(dataToSave, null, 2);
 			const suggestedName = ensureJsonExtension(deps.getCurrentFileName());
 			const currentFileHandle = deps.getCurrentFileHandle();
 			const windowAny = /** @type {any} */ (window);
@@ -82,6 +85,7 @@
 					const writable = await currentFileHandle.createWritable();
 					await writable.write(jsonText);
 					await writable.close();
+					deps.setCurrentData(dataToSave);
 					const handleName = ensureJsonExtension(currentFileHandle.name || suggestedName);
 					deps.setCurrentFileName(handleName);
 					setFormStatus(`上書き保存しました: ${handleName}`);
@@ -102,6 +106,7 @@
 					const writable = await handle.createWritable();
 					await writable.write(jsonText);
 					await writable.close();
+					deps.setCurrentData(dataToSave);
 					deps.setCurrentFileHandle(handle);
 					const handleName = ensureJsonExtension(handle.name || suggestedName);
 					deps.setCurrentFileName(handleName);
@@ -111,6 +116,7 @@
 				}
 
 				downloadJson(jsonText, suggestedName);
+				deps.setCurrentData(dataToSave);
 				deps.setCurrentFileName(suggestedName);
 				setFormStatus(`保存しました: ${suggestedName}`);
 				setTopbarSaveStatus(`ダウンロード保存: ${suggestedName}`);
