@@ -74,6 +74,14 @@
 
 			// Tab キーによるフォーカス移動をカスタム制御し、フォーム内で循環させる
 			formElement.addEventListener("keydown", (event) => {
+				// input要素でEnterキーを押したとき、SafariではsubmitのpreventDefaultだけでは
+				// スクロール位置が変わる問題が起きる。keydownで先に抑止して完全に防ぐ。
+				// isComposingチェックでIME変換確定（日本語入力など）は除外する。
+				if (event.key === "Enter" && !event.isComposing && event.target instanceof HTMLInputElement) {
+					event.preventDefault();
+					return;
+				}
+
 				if (event.key !== "Tab") {
 					return;
 				}
@@ -236,12 +244,19 @@
 
 			if (activeView === "dashboard") {
 				// スクロール位置を保持して再描画し、編集中カードが画面内に収まるよう調整する
+				// 再描画前にカードの可視状態を確認する。カードが既に見えている場合は
+				// keepEntryCardInViewを呼ばない。Safariでは新規DOMへのscrollTop復元が
+				// requestAnimationFrame内のscrollTop読み取りと競合してスクロール位置が
+				// 誤った地点に飛ぶ問題があるため、不要な呼び出しを排除することで回避する。
+				const cardVisibleBeforeRender = isEntryCardVisible(mainElement, nextEntry);
 				const previousScrollTop = mainElement.scrollTop;
 				deps.renderDashboardOverview(mainElement, currentData);
 				mainElement.scrollTop = previousScrollTop;
-				window.requestAnimationFrame(() => {
-					keepEntryCardInView(mainElement, nextEntry);
-				});
+				if (!cardVisibleBeforeRender) {
+					window.requestAnimationFrame(() => {
+						keepEntryCardInView(mainElement, nextEntry);
+					});
+				}
 			} else if (activeView === "detail") {
 				deps.renderEntryDetail(mainElement, nextEntry);
 			}
@@ -492,6 +507,35 @@
 		}
 
 		/**
+		 * ダッシュボード上で指定エントリのカードが現在のスクロール範囲内に見えているか返す。
+		 * 再描画前に呼び出し、keepEntryCardInViewを省略するかどうかの判断に使う。
+		 * @param {HTMLElement} mainElement
+		 * @param {any} entry
+		 * @returns {boolean}
+		 */
+		function isEntryCardVisible(mainElement, entry) {
+			const entryId = String(entry?.id ?? "").trim();
+			if (entryId.length === 0) {
+				return false;
+			}
+
+			const tableWrap = /** @type {HTMLElement | null} */ (mainElement.querySelector(".dashboard-table-wrap"));
+			if (!tableWrap) {
+				return false;
+			}
+
+			const selector = `.dashboard-entry-card[data-entry-id="${cssEscapeAttr(entryId)}"]`;
+			const card = /** @type {HTMLElement | null} */ (tableWrap.querySelector(selector));
+			if (!card) {
+				return false;
+			}
+
+			const containerRect = tableWrap.getBoundingClientRect();
+			const cardRect = card.getBoundingClientRect();
+			return cardRect.top >= containerRect.top && cardRect.bottom <= containerRect.bottom;
+		}
+
+		/**
 		 * ダッシュボード再描画後、編集中のカードが画面内に収まるようスクロールを調整する。
 		 * @param {HTMLElement} mainElement
 		 * @param {any} entry
@@ -565,6 +609,9 @@
 			descriptionInput.value = typeof entry?.description === "string" ? entry.description : "";
 			syncDateInputs?.(entry);
 
+			// type="button"にすることで、Safariを含む全ブラウザで
+			// input要素でのEnterキーがフォーム送信を引き起こさないようにする
+			submitButton.type = "button";
 			submitButton.hidden = true;
 			resetButton.hidden = false;
 			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。新規追加する場合は「新規作成」を押してください。");
@@ -600,6 +647,7 @@
 			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
 			if (submitButton) {
 				submitButton.textContent = "追加";
+				submitButton.type = "submit";
 				submitButton.hidden = false;
 			}
 			if (resetButton) {

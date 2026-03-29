@@ -155,6 +155,10 @@
 		function restoreTableScrollPosition(tableWrap) {
 			tableWrap.scrollTop = Math.max(0, lastTableScrollPosition.top);
 			tableWrap.scrollLeft = Math.max(0, lastTableScrollPosition.left);
+			// Safariでは新規挿入された要素へのscrollTop代入が即時反映されない場合がある。
+			// getBoundingClientRect()を呼ぶことでレイアウト再計算を強制し、
+			// 後続のscrollTop読み取りに正しい値が返るようにする。
+			tableWrap.getBoundingClientRect();
 		}
 
 		/**
@@ -318,12 +322,28 @@
 				card.appendChild(description);
 			}
 
+			// Safariでは、フォーム入力欄にフォーカスがある状態でdivをクリックすると
+			// 1回目はフォーカスが外れるだけでclickイベントが発火しない問題がある。
+			// mousedownをアクションのトリガーにすることで、この問題を回避する。
+			// event.preventDefault()でフォーカス移動を抑止し、clickでの二重発火を防ぐ。
+			card.addEventListener("mousedown", (event) => {
+				if (event.button !== 0) {
+					return;
+				}
+				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
+				if (target?.closest("a")) {
+					return;
+				}
+				event.preventDefault();
+				deps.onEnterEditMode(entry);
+			});
+
 			card.addEventListener("click", (event) => {
 				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
 				if (target?.closest("a")) {
 					return;
 				}
-				deps.onEnterEditMode(entry);
+				// mousedownで処理済みのため何もしない
 			});
 
 			card.addEventListener("dblclick", (event) => {
