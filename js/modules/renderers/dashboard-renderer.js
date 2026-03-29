@@ -4,6 +4,7 @@
 	/**
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   getEditingEntryId: () => string | null,
 	 *   onEnterEditMode: (entry: any) => void,
 	 *   onOpenEntryView: (entry: any) => void,
 	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
@@ -129,6 +130,11 @@
 			mainElement.appendChild(tableWrap);
 			restoreTableScrollPosition(tableWrap);
 			setupBucketObserver(tableWrap);
+			const editingId = deps.getEditingEntryId();
+			if (editingId != null) {
+				const editingCard = /** @type {HTMLElement | null} */ (tableWrap.querySelector(`.dashboard-entry-card[data-entry-id="${editingId}"]`));
+				editingCard?.classList.add("is-editing");
+			}
 			window.requestAnimationFrame(() => {
 				refreshEntryBucketLayouts(tableWrap);
 			});
@@ -335,6 +341,13 @@
 					return;
 				}
 				event.preventDefault();
+				const tableWrap = card.closest(".dashboard-table-wrap");
+				if (tableWrap) {
+					for (const c of tableWrap.querySelectorAll(".dashboard-entry-card.is-editing")) {
+						c.classList.remove("is-editing");
+					}
+				}
+				card.classList.add("is-editing");
 				deps.onEnterEditMode(entry);
 			});
 
@@ -361,6 +374,13 @@
 					return;
 				}
 				event.preventDefault();
+				const tableWrap = card.closest(".dashboard-table-wrap");
+				if (tableWrap) {
+					for (const c of tableWrap.querySelectorAll(".dashboard-entry-card.is-editing")) {
+						c.classList.remove("is-editing");
+					}
+				}
+				card.classList.add("is-editing");
 				deps.onEnterEditMode(entry);
 			});
 

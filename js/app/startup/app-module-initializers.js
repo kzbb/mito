@@ -312,6 +312,7 @@
 
 			deps.setRendererApi(createRendererComposer({
 				getCurrentData: deps.getCurrentData,
+				getEditingEntryId: deps.getEditingEntryId,
 				onEnterEditMode: (/** @type {any} */ entry) => {
 					deps.getBridgeApi()?.enterEditMode?.(entry);
 				},

@@ -5,6 +5,7 @@
 	 * アプリレベルのコールバックを受け取り、レンダラーヘルパーを生成する。
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   getEditingEntryId: () => string | null,
 	 *   onEnterEditMode: (entry: any) => void,
 	 *   onOpenEntryView: (entry: any) => void,
 	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
@@ -97,6 +98,7 @@
 		const dashboardApi = typeof createDashboardRenderer === "function"
 			? createDashboardRenderer({
 				getCurrentData: deps.getCurrentData,
+				getEditingEntryId: deps.getEditingEntryId,
 				onEnterEditMode: deps.onEnterEditMode,
 				onOpenEntryView: deps.onOpenEntryView,
 				onOpenFileLink: deps.onOpenFileLink,
