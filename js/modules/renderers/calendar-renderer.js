@@ -275,26 +275,30 @@
 
 					for (let colIndex = 0; colIndex < width; colIndex += 1) {
 						const td = document.createElement("td");
-						const input = document.createElement("input");
-						input.type = "text";
-						input.className = "calendar-cell-input";
-						input.value = safeGrid[rowIndex][colIndex] ?? "";
+						const cellInput = document.createElement("textarea");
+						cellInput.className = "calendar-cell-input";
+						cellInput.value = safeGrid[rowIndex][colIndex] ?? "";
 						if (rowIndex === selectedRowIndex && colIndex === selectedColumnIndex) {
-							input.classList.add("is-selected");
+							cellInput.classList.add("is-selected");
 						}
-						input.setAttribute("aria-label", `R${rowIndex + 1}C${colIndex + 1}`);
-						input.addEventListener("focus", () => {
+						cellInput.rows = 1;
+						cellInput.spellcheck = false;
+						cellInput.setAttribute("aria-label", `R${rowIndex + 1}C${colIndex + 1}`);
+						resizeCellTextarea(cellInput);
+						cellInput.addEventListener("focus", () => {
 							selectedRowIndex = rowIndex;
 							selectedColumnIndex = colIndex;
+							resizeCellTextarea(cellInput);
 						});
-						input.addEventListener("input", () => {
-							grid[rowIndex][colIndex] = input.value;
+						cellInput.addEventListener("input", () => {
+							grid[rowIndex][colIndex] = cellInput.value;
+							resizeCellTextarea(cellInput);
 							persistCalendar(data, gridToCsv(grid));
 							document.dispatchEvent(new CustomEvent("mito:data-changed"));
 							info.textContent = `${grid.length}行 x ${getGridWidth(grid)}列`;
 							deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 						});
-						td.appendChild(input);
+						td.appendChild(cellInput);
 						tr.appendChild(td);
 					}
 
@@ -329,6 +333,13 @@
 				info.textContent = `${grid.length}行 x ${width}列`;
 			}
 
+			/**
+			 * @param {HTMLTextAreaElement} textarea
+			 */
+			function resizeCellTextarea(textarea) {
+				textarea.style.height = "auto";
+				textarea.style.height = `${textarea.scrollHeight}px`;
+			}
 			/**
 			 * @param {number} index
 			 */

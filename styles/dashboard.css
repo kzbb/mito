@@ -146,7 +146,11 @@
 .dashboard-calendar-cell {
 	padding-left: 1rem;
 	padding-right: 1rem;
-	white-space: nowrap;
+}
+
+.dashboard-calendar-cell {
+	white-space: pre-wrap;
+	word-break: break-word;
 }
 
 .dashboard-table thead th {
