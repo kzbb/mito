@@ -127,8 +127,12 @@
 }
 
 .dashboard-table {
+	--cell-padding-top: 6px;
+	--cell-padding-bottom: 6px;
+	--cell-padding-left: 6px;
+	--cell-padding-right: 6px;
 	width: 100%;
-	table-layout: fixed;
+	table-layout: auto;
 	border-collapse: separate;
 	border-spacing: 0;
 	min-width: 0;
@@ -137,7 +141,7 @@
 .dashboard-table th,
 .dashboard-table td {
 	border-bottom: 1px solid var(--line);
-	padding: 6px 6px;
+	padding: var(--cell-padding-top) var(--cell-padding-right) var(--cell-padding-bottom) var(--cell-padding-left);
 	vertical-align: top;
 	text-align: left;
 	font-size: 0.9rem;
@@ -145,8 +149,8 @@
 
 .dashboard-calendar-header,
 .dashboard-calendar-cell {
-	padding-left: 1rem;
-	padding-right: 1rem;
+	padding-left: var(--cell-padding-left);
+	padding-right: var(--cell-padding-right);
 }
 
 .dashboard-calendar-cell {
@@ -167,6 +171,7 @@
 
 .dashboard-entry-col {
 	width: auto;
+	min-width: 16rem;
 }
 
 .dashboard-entry-cell.is-empty {
