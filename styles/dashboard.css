@@ -11,6 +11,45 @@
 	padding-bottom: 0;
 }
 
+.main-window.dashboard-view .entry-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.45rem 0.55rem;
+}
+
+.dashboard-focus-label {
+	font-weight: 700;
+	color: var(--fg);
+}
+
+.dashboard-focus-chip-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	max-width: 100%;
+}
+
+.dashboard-focus-chip {
+	transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.dashboard-focus-chip.is-active {
+	border-color: #7c9a67;
+	background: #eaf5df;
+	color: #2f5a2a;
+	box-shadow: inset 0 0 0 1px rgba(124, 154, 103, 0.35);
+}
+
+.dashboard-focus-chip.is-active:hover {
+	border-color: #5f8050;
+	background: #dceec9;
+}
+
+.dashboard-focus-count {
+	white-space: nowrap;
+}
+
 .dashboard-card {
 	display: grid;
 	grid-template-columns: 150px minmax(0, 1fr);

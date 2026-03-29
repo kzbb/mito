@@ -143,7 +143,7 @@
 			settingsFields.appendChild(projectField);
 
 			for (const [key, value] of Object.entries(settings)) {
-				if (key === "language") {
+				if (key === "language" || key === "focusCategory") {
 					continue;
 				}
 

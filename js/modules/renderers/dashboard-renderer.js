@@ -83,7 +83,59 @@
 
 			const meta = document.createElement("p");
 			meta.className = "entry-meta";
-			meta.textContent = `focus: ${focusCategories.join(", ")} / ${targetEntries.length}件`;
+			const focusLabel = document.createElement("span");
+			focusLabel.className = "dashboard-focus-label";
+			focusLabel.textContent = "focus:";
+			meta.appendChild(focusLabel);
+
+			const focusChipList = document.createElement("div");
+			focusChipList.className = "dashboard-focus-chip-list";
+			const selectedFocusCategories = new Set(focusCategories);
+			const availableFocusCategories = resolveAvailableFocusCategories(data, activeEntries, focusCategories);
+
+			for (const category of availableFocusCategories) {
+				const button = document.createElement("button");
+				button.type = "button";
+				button.className = "category-suggestion-chip dashboard-focus-chip";
+				button.textContent = category;
+				button.setAttribute("aria-pressed", String(selectedFocusCategories.has(category)));
+				if (selectedFocusCategories.has(category)) {
+					button.classList.add("is-active");
+				}
+
+				button.addEventListener("click", () => {
+					const currentData = deps.getCurrentData();
+					if (!currentData || typeof currentData !== "object") {
+						return;
+					}
+
+					if (!currentData.settings || typeof currentData.settings !== "object") {
+						currentData.settings = {};
+					}
+
+					const nextFocusCategories = new Set(resolveFocusCategories(currentData, Array.isArray(currentData.active) ? currentData.active : []));
+					if (nextFocusCategories.has(category)) {
+						nextFocusCategories.delete(category);
+						if (nextFocusCategories.size === 0) {
+							nextFocusCategories.add(category);
+						}
+					} else {
+						nextFocusCategories.add(category);
+					}
+
+					currentData.settings.focusCategory = Array.from(nextFocusCategories).join(", ");
+					document.dispatchEvent(new CustomEvent("mito:data-changed"));
+					renderDashboardOverview(mainElement, currentData);
+				});
+
+				focusChipList.appendChild(button);
+			}
+			meta.appendChild(focusChipList);
+
+			const focusCount = document.createElement("span");
+			focusCount.className = "dashboard-focus-count";
+			focusCount.textContent = ` / ${targetEntries.length}件`;
+			meta.appendChild(focusCount);
 			mainElement.appendChild(meta);
 
 			if (targetEntries.length === 0) {
@@ -487,11 +539,7 @@
 		 * @returns {string[]}
 		 */
 		function resolveFocusCategories(data, activeEntries) {
-			const raw = typeof data?.settings?.focusCategory === "string"
-				? data.settings.focusCategory
-				: typeof data?.settings?.masterCategory === "string"
-					? data.settings.masterCategory
-					: "";
+			const raw = resolveFocusCategorySetting(data);
 
 			const specified = raw
 				.split(/[,、]/)
@@ -509,6 +557,52 @@
 			));
 
 			return fallback.length > 0 ? fallback : ["出来事"];
+		}
+
+		/**
+		 * @param {any} data
+		 * @param {any[]} activeEntries
+		 * @param {string[]} selectedCategories
+		 * @returns {string[]}
+		 */
+		function resolveAvailableFocusCategories(data, activeEntries, selectedCategories) {
+			const categories = new Set();
+
+			for (const entry of activeEntries) {
+				const category = typeof entry?.category === "string" ? entry.category.trim() : "";
+				if (category.length > 0) {
+					categories.add(category);
+				}
+			}
+
+			for (const category of selectedCategories) {
+				const normalized = String(category ?? "").trim();
+				if (normalized.length > 0) {
+					categories.add(normalized);
+				}
+			}
+
+			if (categories.size === 0) {
+				categories.add(resolveFocusCategorySetting(data));
+			}
+
+			return Array.from(categories).sort((left, right) => left.localeCompare(right, "ja"));
+		}
+
+		/**
+		 * @param {any} data
+		 * @returns {string}
+		 */
+		function resolveFocusCategorySetting(data) {
+			if (typeof data?.settings?.focusCategory === "string" && data.settings.focusCategory.trim().length > 0) {
+				return data.settings.focusCategory.trim();
+			}
+
+			if (typeof data?.settings?.masterCategory === "string" && data.settings.masterCategory.trim().length > 0) {
+				return data.settings.masterCategory.trim();
+			}
+
+			return "出来事";
 		}
 
 		/**
