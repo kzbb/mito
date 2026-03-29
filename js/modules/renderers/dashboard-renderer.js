@@ -447,8 +447,7 @@
 					maxLength = Math.max(maxLength, valueLength);
 				}
 
-				// 幅の目安: テキスト長 + 余白2文字
-				widths.push(Math.max(4, maxLength + 2));
+				widths.push(Math.max(4, maxLength));
 			}
 
 			return widths;
