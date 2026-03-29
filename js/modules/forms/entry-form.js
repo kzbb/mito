@@ -243,20 +243,12 @@
 			}
 
 			if (activeView === "dashboard") {
-				// スクロール位置を保持して再描画し、編集中カードが画面内に収まるよう調整する
-				// 再描画前にカードの可視状態を確認する。カードが既に見えている場合は
-				// keepEntryCardInViewを呼ばない。Safariでは新規DOMへのscrollTop復元が
-				// requestAnimationFrame内のscrollTop読み取りと競合してスクロール位置が
-				// 誤った地点に飛ぶ問題があるため、不要な呼び出しを排除することで回避する。
-				const cardVisibleBeforeRender = isEntryCardVisible(mainElement, nextEntry);
-				const previousScrollTop = mainElement.scrollTop;
+				// 再描画後にカードの実際の画面座標を取得し、バランスの良い位置に調整する。
+				// スクロール位置の保存・復元は行わない（Safari での競合を回避するため）。
 				deps.renderDashboardOverview(mainElement, currentData);
-				mainElement.scrollTop = previousScrollTop;
-				if (!cardVisibleBeforeRender) {
-					window.requestAnimationFrame(() => {
-						keepEntryCardInView(mainElement, nextEntry);
-					});
-				}
+				window.requestAnimationFrame(() => {
+					scrollToBalancedCardPosition(mainElement, nextEntry);
+				});
 			} else if (activeView === "detail") {
 				deps.renderEntryDetail(mainElement, nextEntry);
 			}
@@ -507,40 +499,13 @@
 		}
 
 		/**
-		 * ダッシュボード上で指定エントリのカードが現在のスクロール範囲内に見えているか返す。
-		 * 再描画前に呼び出し、keepEntryCardInViewを省略するかどうかの判断に使う。
-		 * @param {HTMLElement} mainElement
-		 * @param {any} entry
-		 * @returns {boolean}
-		 */
-		function isEntryCardVisible(mainElement, entry) {
-			const entryId = String(entry?.id ?? "").trim();
-			if (entryId.length === 0) {
-				return false;
-			}
-
-			const tableWrap = /** @type {HTMLElement | null} */ (mainElement.querySelector(".dashboard-table-wrap"));
-			if (!tableWrap) {
-				return false;
-			}
-
-			const selector = `.dashboard-entry-card[data-entry-id="${cssEscapeAttr(entryId)}"]`;
-			const card = /** @type {HTMLElement | null} */ (tableWrap.querySelector(selector));
-			if (!card) {
-				return false;
-			}
-
-			const containerRect = tableWrap.getBoundingClientRect();
-			const cardRect = card.getBoundingClientRect();
-			return cardRect.top >= containerRect.top && cardRect.bottom <= containerRect.bottom;
-		}
-
-		/**
-		 * ダッシュボード再描画後、編集中のカードが画面内に収まるようスクロールを調整する。
+		 * ダッシュボード再描画後、編集中カードの実際の画面座標を取得し、
+		 * バランスの良い位置（コンテナ上端から1/3付近）にスクロール調整する。
+		 * カードが既に快適ゾーン（上15%〜下25%の範囲に完全表示）にある場合は何もしない。
 		 * @param {HTMLElement} mainElement
 		 * @param {any} entry
 		 */
-		function keepEntryCardInView(mainElement, entry) {
+		function scrollToBalancedCardPosition(mainElement, entry) {
 			const entryId = String(entry?.id ?? "").trim();
 			if (entryId.length === 0) {
 				return;
@@ -559,23 +524,23 @@
 
 			const containerRect = tableWrap.getBoundingClientRect();
 			const cardRect = card.getBoundingClientRect();
-			const visibleTop = containerRect.top;
-			const visibleBottom = containerRect.bottom;
-			const isVisible = cardRect.top >= visibleTop && cardRect.bottom <= visibleBottom;
-			if (isVisible) {
+
+			// カードがコンテナの可視範囲に完全に収まっていれば何もしない。
+			// コンフォートゾーン判定（上下%の閾値）は使わない。
+			// 理由: refreshEntryBucketLayoutsによるカード高さの変化で座標がわずかにずれると
+			// 閾値を跨ぎやすく、入力のたびに繰り返しスクロールが発生するため。
+			const isFullyVisible = cardRect.top >= containerRect.top && cardRect.bottom <= containerRect.bottom;
+			if (isFullyVisible) {
 				return;
 			}
 
-			const nextTop = tableWrap.scrollTop
-				+ (cardRect.top - containerRect.top)
-				- ((tableWrap.clientHeight - cardRect.height) / 2);
+			// カードをコンテナ上端から1/3の位置に揃える（即時適用）。
+			// behavior: "smooth" は使わない。スムーズスクロール中に次の入力が来ると
+			// 中間座標を読み取ってしまい、再スクロールが繰り返されるジッターが生じるため。
+			const targetOffset = tableWrap.clientHeight * 0.33;
+			const nextTop = tableWrap.scrollTop + (cardRect.top - containerRect.top) - targetOffset;
 			const maxScrollTop = Math.max(0, tableWrap.scrollHeight - tableWrap.clientHeight);
-			const clampedTop = Math.min(Math.max(0, nextTop), maxScrollTop);
-
-			tableWrap.scrollTo({
-				top: clampedTop,
-				behavior: "smooth",
-			});
+			tableWrap.scrollTop = Math.min(Math.max(0, nextTop), maxScrollTop);
 		}
 
 		/**
