@@ -151,7 +151,7 @@
 	display: block;
 	width: 100%;
 	min-height: 34px;
-	height: auto;
+	field-sizing: content;
 	min-width: 0;
 	border: 0;
 	padding: 6px 8px;
@@ -161,7 +161,6 @@
 	color: var(--text);
 	box-sizing: border-box;
 	resize: none;
-	overflow: hidden;
 	line-height: 1.4;
 	white-space: pre-wrap;
 	word-break: break-word;

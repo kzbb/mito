@@ -147,6 +147,10 @@
 	font-size: 0.9rem;
 }
 
+.dashboard-calendar-col {
+	width: 1px;
+}
+
 .dashboard-calendar-header,
 .dashboard-calendar-cell {
 	padding-left: var(--cell-padding-left);
@@ -184,6 +188,7 @@
 }
 
 .dashboard-entry-bucket {
+	container-type: inline-size;
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
@@ -193,8 +198,15 @@
 	overflow: visible;
 }
 
-.dashboard-entry-bucket.is-stacked {
-	flex-direction: column;
+@container (max-width: 17rem) {
+	.dashboard-entry-bucket {
+		flex-direction: column;
+	}
+
+	.dashboard-entry-card {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
 }
 
 .dashboard-entry-card {
@@ -212,11 +224,6 @@
 	min-width: min(10rem, 100%);
 	max-width: 16rem;
 	box-sizing: border-box;
-}
-
-.dashboard-entry-bucket.is-stacked .dashboard-entry-card {
-	flex: 1 1 auto;
-	min-width: 0;
 }
 
 .dashboard-entry-card:hover {

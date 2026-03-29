@@ -15,12 +15,9 @@
 	 * }} deps
 	 */
 	function createDashboardRenderer(deps) {
-		/** @type {ResizeObserver | null} */
-		let bucketResizeObserver = null;
 		/** @type {{ top: number, left: number }} */
 		let lastTableScrollPosition = { top: 0, left: 0 };
 		let dashboardBackgroundClickHandlerInstalled = false;
-		const CRAMPED_THRESHOLD_REM = 17;
 
 		const createLinkPreviewHandler = /** @type {any} */ (globalObject).createLinkPreviewHandler;
 		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
@@ -70,7 +67,6 @@
 			}
 			enableDashboardBackgroundNewEntry(mainElement);
 			captureTableScrollPosition(mainElement);
-			teardownBucketObserver();
 			linkPreviewHandler?.hide();
 
 			mainElement.classList.remove("settings-view");
@@ -190,15 +186,11 @@
 			mainElement.appendChild(tableWrap);
 			enableBlankAreaNewEntry(tableWrap);
 			restoreTableScrollPosition(tableWrap);
-			setupBucketObserver(tableWrap);
 			const editingId = deps.getEditingEntryId();
 			if (editingId != null) {
 				const editingCard = /** @type {HTMLElement | null} */ (tableWrap.querySelector(`.dashboard-entry-card[data-entry-id="${editingId}"]`));
 				editingCard?.classList.add("is-editing");
 			}
-			window.requestAnimationFrame(() => {
-				refreshEntryBucketLayouts(tableWrap);
-			});
 		}
 
 		/**
@@ -539,62 +531,6 @@
 				source: previewSource,
 				truncated: true,
 			};
-		}
-
-		/**
-		 * @param {HTMLElement} tableWrap
-		 */
-		function refreshEntryBucketLayouts(tableWrap) {
-			const buckets = tableWrap.querySelectorAll(".dashboard-entry-bucket");
-			for (const bucket of buckets) {
-				if (!(bucket instanceof HTMLElement)) {
-					continue;
-				}
-
-				const cards = bucket.querySelectorAll(".dashboard-entry-card");
-				if (cards.length <= 1) {
-					bucket.classList.remove("is-stacked");
-					continue;
-				}
-
-				const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-				const thresholdPx = CRAMPED_THRESHOLD_REM * rootFontSize;
-				const availableBucketWidth = bucket.clientWidth;
-
-				bucket.classList.remove("is-stacked");
-				if (availableBucketWidth < thresholdPx) {
-					bucket.classList.add("is-stacked");
-				}
-			}
-		}
-
-		/**
-		 * @param {HTMLElement} tableWrap
-		 */
-		function setupBucketObserver(tableWrap) {
-			if (typeof ResizeObserver !== "function") {
-				return;
-			}
-
-			bucketResizeObserver = new ResizeObserver(() => {
-				window.requestAnimationFrame(() => {
-					refreshEntryBucketLayouts(tableWrap);
-				});
-			});
-			bucketResizeObserver.observe(tableWrap);
-		}
-
-		/**
-		 * バケットのResizeObserverを切断して解放する。
-		 * 再描画前に呼ばれ、古いテーブルへの参照が残り続けるのを防ぐ。
-		 */
-		function teardownBucketObserver() {
-			if (!bucketResizeObserver) {
-				return;
-			}
-
-			bucketResizeObserver.disconnect();
-			bucketResizeObserver = null;
 		}
 
 		/**

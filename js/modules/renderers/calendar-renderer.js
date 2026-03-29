@@ -284,15 +284,12 @@
 						cellInput.rows = 1;
 						cellInput.spellcheck = false;
 						cellInput.setAttribute("aria-label", `R${rowIndex + 1}C${colIndex + 1}`);
-						resizeCellTextarea(cellInput);
 						cellInput.addEventListener("focus", () => {
 							selectedRowIndex = rowIndex;
 							selectedColumnIndex = colIndex;
-							resizeCellTextarea(cellInput);
 						});
 						cellInput.addEventListener("input", () => {
 							grid[rowIndex][colIndex] = cellInput.value;
-							resizeCellTextarea(cellInput);
 							persistCalendar(data, gridToCsv(grid));
 							document.dispatchEvent(new CustomEvent("mito:data-changed"));
 							info.textContent = `${grid.length}行 x ${getGridWidth(grid)}列`;
@@ -333,13 +330,6 @@
 				info.textContent = `${grid.length}行 x ${width}列`;
 			}
 
-			/**
-			 * @param {HTMLTextAreaElement} textarea
-			 */
-			function resizeCellTextarea(textarea) {
-				textarea.style.height = "auto";
-				textarea.style.height = `${textarea.scrollHeight}px`;
-			}
 			/**
 			 * @param {number} index
 			 */
