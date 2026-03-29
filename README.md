@@ -172,7 +172,6 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
 - 内部リンク: `[[ページ名]]` / `[[ページ名|表示名]]`
 - ファイルリンク: `[file:docs/memo.md メモ]`
 - 絶対ファイルパス: `[file:/Users/you/path/to/file.md 表示名]`
-- `file://` 形式: `[file:file:///Users/you/path/to/file.md 表示名]`
 - 外部リンク: `[https://example.com 表示名]`
 
 補足:
