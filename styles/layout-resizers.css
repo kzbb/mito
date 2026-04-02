@@ -2,7 +2,7 @@
 	position: relative;
 	cursor: row-resize;
 	user-select: none;
-	background: #d5cab9;
+	background: var(--control-bg-active);
 	margin: 0 -12px;
 }
 
@@ -13,7 +13,7 @@
 	right: 0;
 	top: 2px;
 	bottom: 2px;
-	background: #baa990;
+	background: var(--line);
 }
 
 .left-pane-splitter:hover::after,
@@ -22,7 +22,7 @@
 }
 
 .splitter {
-	background: #d5cab9;
+	background: var(--control-bg-active);
 	cursor: col-resize;
 	user-select: none;
 	position: relative;
@@ -35,7 +35,7 @@
 	right: 1px;
 	top: 0;
 	bottom: 0;
-	background: #baa990;
+	background: var(--line);
 }
 
 .splitter:hover::after,

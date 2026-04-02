@@ -23,7 +23,7 @@
 	font-size: 0.82rem;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
-	color: #6f5c45;
+	color: var(--muted);
 }
 
 .settings-section-hint {
@@ -42,16 +42,14 @@
 	display: grid;
 	gap: 5px;
 	padding: 8px;
-	/* border: 1px solid #d2c4ae; */
 	border-radius: 8px;
-	/* background: #f8f3ea; */
 }
 
 .settings-field-name {
 	font-size: 0.77rem;
 	font-weight: 700;
 	letter-spacing: 0.02em;
-	color: #6d5c49;
+	color: var(--muted);
 	overflow-wrap: anywhere;
 	word-break: break-word;
 }
@@ -64,7 +62,7 @@
 	font: inherit;
 	font-size: 0.84rem;
 	color: var(--text);
-	background: #fffdf8;
+	background: var(--input-bg);
 }
 
 .settings-value-input:focus {
@@ -75,7 +73,7 @@
 
 .settings-file-input {
 	padding: 4px;
-	background: #fffdf8;
+	background: var(--input-bg);
 }
 
 .settings-calendar-button {
@@ -85,13 +83,13 @@
 	padding: 6px 10px;
 	font: inherit;
 	font-size: 0.82rem;
-	background: #fffdf8;
+	background: var(--input-bg);
 	color: var(--text);
 	cursor: pointer;
 }
 
 .settings-calendar-button:hover {
-	background: #f8f0e4;
+	background: var(--control-bg-hover);
 }
 
 .settings-calendar-button:focus {
@@ -116,10 +114,10 @@
 
 .settings-archived-item {
 	padding: 4px 8px;
-	border: 1px solid #c5b69f;
+	border: 1px solid var(--line);
 	border-radius: 999px;
 	font-size: 0.76rem;
-	background: #f5ede0;
+	background: var(--panel-3);
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
@@ -137,9 +135,9 @@
 }
 
 .settings-archived-restore {
-	border: 1px solid #9fb18f;
-	background: #f7fbf2;
-	color: #2f5a2a;
+	border: 1px solid var(--success-border);
+	background: var(--success-bg);
+	color: var(--success-text);
 	border-radius: 999px;
 	padding: 2px 8px;
 	font: inherit;
@@ -148,8 +146,8 @@
 }
 
 .settings-archived-restore:hover {
-	background: #eaf5df;
-	border-color: #7c9a67;
+	background: var(--success-hover-bg);
+	border-color: var(--success-hover-border);
 }
 
 .settings-archived-restore:focus {
@@ -158,9 +156,9 @@
 }
 
 .settings-archived-delete {
-	border: 1px solid #bfa487;
-	background: #fff9f2;
-	color: #7c2f28;
+	border: 1px solid var(--danger-border);
+	background: var(--danger-bg);
+	color: var(--danger-text);
 	border-radius: 999px;
 	padding: 2px 8px;
 	font: inherit;
@@ -169,8 +167,8 @@
 }
 
 .settings-archived-delete:hover {
-	background: #fde8e4;
-	border-color: #a64a3f;
+	background: var(--danger-hover-bg);
+	border-color: var(--danger-hover-border);
 }
 
 .settings-archived-delete:focus {

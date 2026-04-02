@@ -32,7 +32,7 @@
 .tree-group > ul {
 	padding-left: 14px;
 	margin: 0 0 4px;
-	border-left: 1px solid #d4c6af;
+	border-left: 1px solid var(--line);
 }
 
 .tree-group li,
@@ -71,8 +71,8 @@
 }
 
 .tree-leaf-button.is-selected {
-	background: #cbd9e8;
-	color: #1f3750;
+	background: var(--selected-bg);
+	color: var(--accent-2);
 }
 
 .tree-leaf::before {
@@ -82,11 +82,11 @@
 	top: 50%;
 	width: 5px;
 	height: 1px;
-	background: #a18f78;
+	background: var(--accent);
 	transform: translateY(-50%);
 }
 
 .tree-group summary:hover .tree-label,
 .tree-leaf:hover {
-	background: #ebe1d2;
+	background: var(--hover-bg);
 }

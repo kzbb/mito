@@ -13,6 +13,7 @@
 .main-window {
 	background: var(--panel);
 	padding: 12px;
+	box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
 }
 
 .left-pane {
@@ -38,7 +39,7 @@
 
 .main-window {
 	border-right: 0;
-	background: linear-gradient(180deg, #ece8de 0%, var(--panel) 42%, #fcfbf8 100%);
+	background: linear-gradient(135deg, var(--gradient-top) 0%, var(--panel) 42%, var(--gradient-bottom) 100%);
 }
 
 .explorer-tree {
@@ -51,7 +52,7 @@
 	font-size: 0.68rem;
 	letter-spacing: 0.06em;
 	font-weight: 700;
-	color: #7b6c58;
+	color: var(--muted);
 	text-transform: uppercase;
 	margin-bottom: 4px;
 }

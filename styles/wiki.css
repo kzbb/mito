@@ -65,23 +65,23 @@
 .entry-wiki-description-input {
 	min-height: 84px;
 	padding: 8px 10px;
-	border: 1px solid #d7c8b2;
+	border: 1px solid var(--line);
 	border-radius: 4px;
-	background: #fffdf8;
+	background: var(--input-bg);
 	white-space: pre-wrap;
 	word-break: break-word;
 }
 
 .entry-wiki-description-input:hover {
-	border-color: #b9a68a;
-	background: #fbf6ee;
+	border-color: var(--line-strong);
+	background: var(--panel-3);
 }
 
 .entry-wiki-description-input:focus {
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: inset 0 0 0 2px var(--accent);
-	background: #ffffff;
+	background: var(--panel);
 }
 
 .entry-wiki {
@@ -104,9 +104,9 @@
 }
 
 .entry-wiki-archive-button {
-	border: 1px solid #cdbfa9;
-	background: #f7eee0;
-	color: #5f503c;
+	border: 1px solid var(--control-border);
+	background: var(--control-bg);
+	color: var(--text);
 	border-radius: 999px;
 	padding: 5px 10px;
 	font: inherit;
@@ -117,8 +117,8 @@
 }
 
 .entry-wiki-archive-button:hover {
-	background: #efe0c9;
-	border-color: #b9a88f;
+	background: var(--control-bg-hover);
+	border-color: var(--line-strong);
 }
 
 .entry-wiki-archive-button:focus {
@@ -149,15 +149,15 @@
 }
 
 .entry-wiki-title-input:hover {
-	border-color: #c7b79f;
-	background: #f4ede2;
+	border-color: var(--line);
+	background: var(--bg);
 }
 
 .entry-wiki-title-input:focus {
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: inset 0 0 0 2px var(--accent);
-	background: #fffdf8;
+	background: var(--input-bg);
 }
 
 .entry-wiki-subtitle {
@@ -199,7 +199,7 @@
 .entry-wiki-meta-stack-title {
 	grid-column: 1 / -1;
 	font-size: 0.72rem;
-	color: #6f6456;
+	color: var(--subtle);
 	text-transform: uppercase;
 	letter-spacing: 0.02em;
 }
@@ -214,7 +214,7 @@
 
 .entry-wiki-meta-label {
 	font-size: 0.72rem;
-	color: #6f6456;
+	color: var(--subtle);
 	letter-spacing: 0.03em;
 	text-transform: uppercase;
 }
@@ -223,7 +223,7 @@
 	min-width: 120px;
 	border: none;
 	background: transparent;
-	color: #5f503c;
+	color: var(--text);
 	border-radius: 0;
 	padding: 0;
 	font: inherit;

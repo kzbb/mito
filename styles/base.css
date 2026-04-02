@@ -6,7 +6,7 @@ body {
 	margin: 0;
 	font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", sans-serif;
 	color: var(--text);
-	background: linear-gradient(180deg, #f0e9dd 0%, var(--bg) 100%);
+	background: linear-gradient(135deg, var(--panel-3) 0%, var(--bg) 100%);
 	overflow-x: auto;
 }
 

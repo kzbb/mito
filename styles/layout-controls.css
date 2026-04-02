@@ -3,9 +3,10 @@
 #save-file,
 #outline-settings,
 .form-actions button {
-	border: 1px solid #97886f;
+	border: 1px solid var(--control-border);
 	border-radius: 4px;
-	background: #e9e0d0;
+	background: var(--control-bg);
+	box-shadow: 3px 3px 6px var(--shadow-dark), -2px -2px 4px var(--shadow-light);
 	color: var(--text);
 	font: inherit;
 	cursor: pointer;
@@ -24,8 +25,8 @@
 #save-file:hover,
 #outline-settings:hover,
 .form-actions button:hover {
-	background: #ded2bc;
-	border-color: #85775f;
+	background: var(--control-bg-hover);
+	border-color: var(--line-strong);
 }
 
 #new-file:active,
@@ -33,7 +34,7 @@
 #save-file:active,
 #outline-settings:active,
 .form-actions button:active {
-	background: #d2c4ab;
+	background: var(--control-bg-active);
 }
 
 .topbar-save-status {
