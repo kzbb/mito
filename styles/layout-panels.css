@@ -13,7 +13,7 @@
 .main-window {
 	background: var(--panel);
 	padding: 12px;
-	box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+	box-shadow: 2px 4px 12px var(--shadow-dark), -1px -1px 6px var(--shadow-light);
 }
 
 .left-pane {
@@ -39,7 +39,7 @@
 
 .main-window {
 	border-right: 0;
-	background: linear-gradient(135deg, var(--gradient-top) 0%, var(--panel) 42%, var(--gradient-bottom) 100%);
+	background: var(--panel);
 }
 
 .explorer-tree {

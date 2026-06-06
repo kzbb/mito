@@ -64,7 +64,7 @@
 }
 
 .dashboard-card:hover {
-	box-shadow: 4px 4px 10px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+	box-shadow: 8px 8px 20px var(--shadow-dark), -5px -5px 14px var(--shadow-light);
 }
 
 .dashboard-card:focus-visible {
@@ -226,7 +226,7 @@
 }
 
 .dashboard-entry-card:hover {
-	box-shadow: 3px 3px 8px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+	box-shadow: 7px 7px 16px var(--shadow-dark), -4px -4px 11px var(--shadow-light);
 }
 
 .dashboard-entry-card:focus-visible {

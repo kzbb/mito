@@ -1,9 +1,9 @@
 :root {
 	/* Surfaces */
-	--bg: #f0f0f0;
+	--bg: #f5f5f5;
 	--panel: #ffffff;
 	--panel-2: #fafafa;
-	--panel-3: #f5f5f5;
+	--panel-3: #f0f0f0;
 
 	/* Text */
 	--text: #333333;
@@ -11,32 +11,32 @@
 	--subtle: #999999;
 
 	/* Borders */
-	--line: #d0d0d0;
-	--line-strong: #b0b0b0;
+	--line: #dddddd;
+	--line-strong: #cccccc;
 
 	/* Accent */
-	--accent: #a8a8a8;
-	--accent-2: #222222;
+	--accent: #aaaaaa;
+	--accent-2: #444444;
 
 	/* Neumorphic shadows */
-	--shadow-dark: #d0d0d0;
+	--shadow-dark: #c0c0c0;
 	--shadow-light: #ffffff;
 
 	/* Controls */
-	--control-bg: #eeeeee;
-	--control-bg-hover: #e5e5e5;
-	--control-bg-active: #d8d8d8;
-	--control-border: #c8c8c8;
+	--control-bg: #f0f0f0;
+	--control-bg-hover: #e8e8e8;
+	--control-bg-active: #dcdcdc;
+	--control-border: #cccccc;
 
 	/* Structural */
-	--header-bg: #f0f0f0;
+	--header-bg: #f5f5f5;
 	--selected-bg: #dcdcdc;
-	--hover-bg: #e8e8e8;
+	--hover-bg: #ebebeb;
 	--input-bg: #fafafa;
 
 	/* Gradient endpoints */
 	--gradient-top: #fafafa;
-	--gradient-bottom: #e7e7e7;
+	--gradient-bottom: #dcdcdc;
 
 	/* Inline content */
 	--code-bg: rgba(0, 0, 0, 0.06);
@@ -65,18 +65,18 @@
 	--chip-active-hover-border: #5f5f5f;
 
 	/* Calendar */
-	--cal-header-bg: #ebebeb;
+	--cal-header-bg: #efefef;
 	--cal-header-text: #666666;
 	--cal-selected-bg: #dcdcdc;
-	--cal-selected-text: #333333;
-	--cal-grid-border: #d8d8d8;
+	--cal-selected-text: #222222;
+	--cal-grid-border: #dddddd;
 	--cal-cell-bg: #fafafa;
 	--cal-cell-selected-bg: #f0f0f0;
-	--cal-handle-border: #d0d0d0;
+	--cal-handle-border: #cccccc;
 	--cal-handle-text: #888888;
-	--cal-handle-hover-bg: #e8e8e8;
+	--cal-handle-hover-bg: #ebebeb;
 	--cal-toolbar-group-bg: #f5f5f5;
-	--cal-toolbar-group-border: #d8d8d8;
+	--cal-toolbar-group-border: #dddddd;
 	--cal-toolbar-group-label: #666666;
 
 	/* Layout dimensions */
