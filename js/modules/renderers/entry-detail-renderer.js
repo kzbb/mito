@@ -10,7 +10,8 @@
 	 *   resolveEntryName: (entry: any) => string,
 	 *   onOpenEntryView: (entry: any) => void,
 	 *   onOpenFileLink: (filePath: string) => Promise<boolean>,
-	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>
+	 *   onPreviewFileLink?: (filePath: string) => Promise<{ title: string, body: string, imageUrl?: string } | null>,
+	 *   onBackToDashboard: (mainElement: HTMLElement) => void
 	 * }} deps
 	 */
 	function createEntryDetailRenderer(deps) {
@@ -69,6 +70,15 @@
 
 			const header = document.createElement("header");
 			header.className = "entry-wiki-header";
+
+			const backButton = document.createElement("button");
+			backButton.type = "button";
+			backButton.className = "entry-wiki-back-button";
+			backButton.textContent = "← 戻る";
+			backButton.addEventListener("click", () => {
+				deps.onBackToDashboard(mainElement);
+			});
+			header.appendChild(backButton);
 
 			const title = document.createElement("h1");
 			title.className = "entry-wiki-title";

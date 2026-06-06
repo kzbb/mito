@@ -511,6 +511,7 @@
 					}
 
 					currentData.project = nextProject;
+					document.title = nextProject.trim() ? `${nextProject.trim()} - MITO` : "MITO";
 					deps.getBridgeApi()?.updateOutlineProjectName?.(nextProject);
 				},
 				onOpenCalendarEditor: () => {

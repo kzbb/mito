@@ -109,7 +109,9 @@
 			}
 
 			deps.setCurrentData(data);
-			scopeElement.textContent = deps.resolveProjectName(data);
+			const projectName = deps.resolveProjectName(data);
+			scopeElement.textContent = projectName;
+			document.title = `${projectName} - MITO`;
 			populateCategoryOptions(data);
 			const openCategories = deps.captureOpenCategories(treeElement);
 			treeElement.innerHTML = "";

@@ -96,6 +96,22 @@
 	padding-bottom: 8px;
 }
 
+.entry-wiki-back-button {
+	display: inline-block;
+	border: none;
+	background: none;
+	color: var(--muted);
+	font: inherit;
+	font-size: 0.82rem;
+	cursor: pointer;
+	padding: 0;
+	margin-bottom: 8px;
+}
+
+.entry-wiki-back-button:hover {
+	color: var(--text);
+}
+
 .entry-wiki-header-row {
 	display: flex;
 	align-items: center;

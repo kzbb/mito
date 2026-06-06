@@ -79,6 +79,9 @@
 				onOpenEntryView: deps.onOpenEntryView,
 				onOpenFileLink: deps.onOpenFileLink,
 				onPreviewFileLink: deps.onPreviewFileLink,
+				onBackToDashboard: (mainElement) => {
+					renderDashboardOverview(mainElement, deps.getCurrentData());
+				},
 			})
 			: null;
 
