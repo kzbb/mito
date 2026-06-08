@@ -58,6 +58,32 @@
                             <textarea name="description" rows="4" placeholder="説明を入力"></textarea>
                         </label>
 
+                        <fieldset class="form-field entry-color-field">
+                            <legend>カードの色</legend>
+                            <div class="entry-color-swatch-group" role="radiogroup" aria-label="カードの色">
+                                <label class="entry-color-swatch-option" title="白">
+                                    <input type="radio" name="color" value="#ffffff" checked aria-label="白">
+                                    <span class="entry-color-swatch" style="--swatch-color:#ffffff"></span>
+                                </label>
+                                <label class="entry-color-swatch-option" title="ピンク">
+                                    <input type="radio" name="color" value="#ffeef3" aria-label="ピンク">
+                                    <span class="entry-color-swatch" style="--swatch-color:#ffeef3; --swatch-emphasis:#d897aa"></span>
+                                </label>
+                                <label class="entry-color-swatch-option" title="黄">
+                                    <input type="radio" name="color" value="#fffde7" aria-label="黄">
+                                    <span class="entry-color-swatch" style="--swatch-color:#fffde7; --swatch-emphasis:#d8d297"></span>
+                                </label>
+                                <label class="entry-color-swatch-option" title="緑">
+                                    <input type="radio" name="color" value="#eaf8ec" aria-label="緑">
+                                    <span class="entry-color-swatch" style="--swatch-color:#eaf8ec; --swatch-emphasis:#97d8a1"></span>
+                                </label>
+                                <label class="entry-color-swatch-option" title="青">
+                                    <input type="radio" name="color" value="#e9f2fb" aria-label="青">
+                                    <span class="entry-color-swatch" style="--swatch-color:#e9f2fb; --swatch-emphasis:#97b8d8"></span>
+                                </label>
+                            </div>
+                        </fieldset>
+
                         <label class="form-field">
                             <span>セル内表示順</span>
                             <input type="number" name="dashboardOrder" min="0" step="1" placeholder="0">

@@ -35,6 +35,13 @@
 				return values;
 			});
 
+		/** カードの色として選択できるポストイット風の5色（16進カラーコード、style.cssの配色に準拠） */
+		const ENTRY_CARD_COLORS = ["#ffffff", "#ffeef3", "#fffde7", "#eaf8ec", "#e9f2fb"];
+		const DEFAULT_ENTRY_CARD_COLOR = ENTRY_CARD_COLORS[0];
+
+		/** 直近に選択されたカード色。新規エントリ作成時の初期値として引き継ぐ。 */
+		let lastUsedEntryColor = DEFAULT_ENTRY_CARD_COLOR;
+
 		/** @type {((entry: any | null) => void) | null} */
 		let syncDateInputs = null;
 		/**
@@ -140,9 +147,11 @@
 
 				const timelinePayload = buildTimelinePayload(formElement);
 				const dashboardOrder = readDashboardOrder(formElement);
+				const color = readEntryColor(formElement);
 				const entryPayload = {
 					category,
 					name,
+					color,
 					dashboardOrder,
 					description: readTrimmedFormValue(formData, "description"),
 					...timelinePayload,
@@ -173,9 +182,13 @@
 			});
 
 				// フォームリセット（「新規作成」ボタン）で追加モードに戻す
+				// reset イベントはネイティブのフォームリセットより先に発火するため、
+				// 色選択の引き継ぎ処理はリセット完了後（次フレーム）まで遅延させる。
 			formElement.addEventListener("reset", () => {
-				setFormModeAdd();
-				syncDateInputs?.(null);
+				window.requestAnimationFrame(() => {
+					setFormModeAdd();
+					syncDateInputs?.(null);
+				});
 				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「追加」を押してください。");
 			});
 		}
@@ -216,9 +229,11 @@
 
 			const timelinePayload = buildTimelinePayload(formElement);
 			const dashboardOrder = readDashboardOrder(formElement);
+			const color = readEntryColor(formElement);
 			const nextPayload = {
 				category: nextCategory,
 				name: nextName,
+				color,
 				dashboardOrder,
 				description: descriptionInput.value.trim(),
 				...timelinePayload,
@@ -542,6 +557,44 @@
 		}
 
 		/**
+		 * @param {HTMLFormElement} formElement
+		 * @returns {string}
+		 */
+		function readEntryColor(formElement) {
+			const checked = /** @type {HTMLInputElement | null} */ (
+				formElement.querySelector("input[name='color']:checked")
+			);
+			const value = checked?.value?.trim() ?? "";
+			const color = ENTRY_CARD_COLORS.includes(value) ? value : DEFAULT_ENTRY_CARD_COLOR;
+			lastUsedEntryColor = color;
+			return color;
+		}
+
+		/**
+		 * フォームの色選択ラジオボタンを指定の色に合わせる（一覧にない色は既定色扱い）。
+		 * @param {HTMLFormElement} formElement
+		 * @param {string} color
+		 */
+		function applyEntryColorSelection(formElement, color) {
+			const targetColor = ENTRY_CARD_COLORS.includes(color) ? color : DEFAULT_ENTRY_CARD_COLOR;
+			for (const input of formElement.querySelectorAll("input[name='color']")) {
+				if (input instanceof HTMLInputElement) {
+					input.checked = input.value === targetColor;
+				}
+			}
+		}
+
+		/**
+		 * フォームの色選択ラジオボタンを、指定エントリの色（未指定時は既定色）に合わせる。
+		 * @param {HTMLFormElement} formElement
+		 * @param {any} entry
+		 */
+		function syncEntryColorInputs(formElement, entry) {
+			const rawColor = typeof entry?.color === "string" ? entry.color.trim() : "";
+			applyEntryColorSelection(formElement, rawColor || DEFAULT_ENTRY_CARD_COLOR);
+		}
+
+		/**
 		 * ダッシュボード再描画後、編集中カードの実際の画面座標を取得し、
 		 * バランスの良い位置（コンテナ上端から1/3付近）にスクロール調整する。
 		 * カードが既に快適ゾーン（上15%〜下25%の範囲に完全表示）にある場合は何もしない。
@@ -616,6 +669,7 @@
 				? String(Math.max(0, Number.parseInt(String(entry.dashboardOrder), 10)))
 				: "0";
 			descriptionInput.value = typeof entry?.description === "string" ? entry.description : "";
+			syncEntryColorInputs(formElement, entry);
 			syncDateInputs?.(entry);
 
 			// type="button"にすることで、Safariを含む全ブラウザで
@@ -651,6 +705,8 @@
 				if (descriptionInput) {
 					descriptionInput.value = "";
 				}
+				// カード色は前回選択した色を引き継ぐ（承前）
+				applyEntryColorSelection(formElement, lastUsedEntryColor);
 			}
 
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));

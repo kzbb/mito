@@ -83,6 +83,60 @@
 	box-shadow: inset 0 0 0 2px var(--accent);
 }
 
+.entry-color-field {
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+
+.entry-color-field legend {
+	padding: 0;
+	font-size: 0.8rem;
+	color: var(--muted);
+}
+
+.entry-color-swatch-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.entry-color-swatch-option {
+	display: block;
+	cursor: pointer;
+}
+
+.entry-color-swatch-option input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.entry-color-swatch {
+	display: block;
+	width: 28px;
+	height: 28px;
+	border-radius: 6px;
+	background: var(--swatch-color);
+	border: 1px solid var(--line);
+	box-shadow: 1px 1px 4px var(--shadow-dark);
+}
+
+.entry-color-swatch-option input:checked + .entry-color-swatch {
+	box-shadow: inset 0 0 0 2px var(--swatch-emphasis, var(--accent));
+}
+
+.entry-color-swatch-option input:focus-visible + .entry-color-swatch {
+	outline: 2px solid var(--swatch-emphasis, var(--accent));
+	outline-offset: 2px;
+}
+
 .form-actions {
 	display: flex;
 	gap: 8px;

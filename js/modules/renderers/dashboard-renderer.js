@@ -399,6 +399,15 @@
 			card.setAttribute("role", "button");
 			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集、ダブルクリックで個別表示）`);
 
+			const cardColor = resolveEntryCardColor(entry);
+			if (cardColor) {
+				card.style.setProperty("--entry-card-color", cardColor);
+				const emphasisColor = resolveEntryCardEmphasisColor(cardColor);
+				if (emphasisColor) {
+					card.style.setProperty("--entry-card-emphasis", emphasisColor);
+				}
+			}
+
 			const name = document.createElement("span");
 			name.className = "dashboard-entry-card-name";
 			name.textContent = deps.resolveEntryName(entry);
@@ -644,6 +653,39 @@
 			}
 
 			return rowMap;
+		}
+
+		/**
+		 * @param {any} entry
+		 * @returns {string | null}
+		 */
+		function resolveEntryCardColor(entry) {
+			const color = typeof entry?.color === "string" ? entry.color.trim() : "";
+			return /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
+		}
+
+		/**
+		 * カードの背景色ごとに、選択時の強調色（同系統の濃い色味）を対応付ける。
+		 * 白は色味を持たないため既定のアクセント色（var(--accent)）に委ねる。
+		 * @type {Record<string, string>}
+		 */
+		const ENTRY_CARD_EMPHASIS_COLORS = {
+			"#ffeef3": "#d897aa",
+			"#fffde7": "#d8d297",
+			"#eaf8ec": "#97d8a1",
+			"#e9f2fb": "#97b8d8",
+		};
+
+		/**
+		 * @param {string | null} cardColor
+		 * @returns {string | null}
+		 */
+		function resolveEntryCardEmphasisColor(cardColor) {
+			if (!cardColor) {
+				return null;
+			}
+
+			return ENTRY_CARD_EMPHASIS_COLORS[cardColor.toLowerCase()] ?? null;
 		}
 
 		/**
