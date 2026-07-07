@@ -184,7 +184,6 @@
 
 			const tableWrap = createDashboardTable(schema, categoryColumns, startRowIndex, endRowIndex);
 			mainElement.appendChild(tableWrap);
-			enableBlankAreaNewEntry(tableWrap);
 			restoreTableScrollPosition(tableWrap);
 			const editingId = deps.getEditingEntryId();
 			if (editingId != null) {
@@ -323,41 +322,6 @@
 				}
 
 				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
-				if (target !== mainElement) {
-					return;
-				}
-
-				for (const card of mainElement.querySelectorAll(".dashboard-entry-card.is-editing")) {
-					if (card instanceof HTMLElement) {
-						card.classList.remove("is-editing");
-						card.blur();
-					}
-				}
-
-				const activeElement = document.activeElement;
-				if (activeElement instanceof HTMLElement && mainElement.contains(activeElement)) {
-					activeElement.blur();
-				}
-
-				deps.onStartNewEntry();
-			});
-		}
-
-		/**
-		 * @param {HTMLElement} tableWrap
-		 */
-		function enableBlankAreaNewEntry(tableWrap) {
-			const tbody = /** @type {HTMLTableSectionElement | null} */ (tableWrap.querySelector("tbody"));
-			if (!tbody) {
-				return;
-			}
-
-			tbody.addEventListener("click", (event) => {
-				if (event.button !== 0) {
-					return;
-				}
-
-				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
 				if (!target) {
 					return;
 				}
@@ -370,8 +334,14 @@
 					return;
 				}
 
-				event.preventDefault();
-				for (const card of tableWrap.querySelectorAll(".dashboard-entry-card.is-editing")) {
+				// 編集中のカードが無ければ、外クリックは何もしない。
+				// ここで無条件にonStartNewEntry()を呼ぶと、新規入力の途中で
+				// 空白部分をクリックしただけでフォームが消えてしまう。
+				if (deps.getEditingEntryId() === null) {
+					return;
+				}
+
+				for (const card of mainElement.querySelectorAll(".dashboard-entry-card.is-editing")) {
 					if (card instanceof HTMLElement) {
 						card.classList.remove("is-editing");
 						card.blur();
@@ -379,7 +349,7 @@
 				}
 
 				const activeElement = document.activeElement;
-				if (activeElement instanceof HTMLElement && tableWrap.contains(activeElement)) {
+				if (activeElement instanceof HTMLElement && mainElement.contains(activeElement)) {
 					activeElement.blur();
 				}
 

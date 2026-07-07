@@ -60,6 +60,7 @@
 			syncDateInputs = setupTimelineFields(formElement);
 			syncDateInputs(null);
 			resetButton.hidden = true;
+			ensureEditingStatusBadge(formElement);
 
 			// データ変更イベント発火時、編集中エントリの日付フィールドを最新状態に同期する
 			document.addEventListener("mito:data-changed", () => {
@@ -86,6 +87,16 @@
 				// isComposingチェックでIME変換確定（日本語入力など）は除外する。
 				if (event.key === "Enter" && !event.isComposing && event.target instanceof HTMLInputElement) {
 					event.preventDefault();
+					return;
+				}
+
+				// 編集中にEscキーを押すと、「新規カード」ボタンと同じ操作で追加モードに戻る。
+				// 誤って前のカードへの上書きを続けてしまう事故を、キー一つで抜けられるようにして防ぐ。
+				if (event.key === "Escape") {
+					if (deps.getEditingEntryId() !== null) {
+						event.preventDefault();
+						formElement.reset();
+					}
 					return;
 				}
 
@@ -122,7 +133,7 @@
 
 				const editingEntryId = deps.getEditingEntryId();
 				if (editingEntryId !== null) {
-					deps.setFormStatus("編集中は自動反映されます。新規追加する場合は「新規作成」を押してください。");
+					deps.setFormStatus("編集中は自動反映されます。次のカードを追加する場合は「新規カード」を押してください。");
 					return;
 				}
 
@@ -165,10 +176,10 @@
 				const targetEntry = { id: nextId, ...entryPayload };
 				currentData.active.push(targetEntry);
 
-				enterEditMode(targetEntry);
+				// 追加直後にそのカードを編集状態にはせず、何も選択していない状態に戻す。
+				setFormModeAdd();
 				deps.renderOutlineFromData(currentData);
 				if (wasDashboardView) {
-					syncDashboardCardSelection(String(targetEntry.id ?? ""));
 					window.requestAnimationFrame(() => {
 						scrollToBalancedCardPosition(mainElement, targetEntry);
 					});
@@ -181,7 +192,7 @@
 				deps.setFormStatus("新しいエントリを追加し、該当カテゴリへ反映しました。");
 			});
 
-				// フォームリセット（「新規作成」ボタン）で追加モードに戻す
+				// フォームリセット（「新規カード」ボタン）で追加モードに戻す
 				// reset イベントはネイティブのフォームリセットより先に発火するため、
 				// 色選択の引き継ぎ処理はリセット完了後（次フレーム）まで遅延させる。
 			formElement.addEventListener("reset", () => {
@@ -189,7 +200,7 @@
 					setFormModeAdd();
 					syncDateInputs?.(null);
 				});
-				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「追加」を押してください。");
+				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「新規カード」を押してください。");
 			});
 		}
 
@@ -640,6 +651,41 @@
 		}
 
 		/**
+		 * 見出し（データ入力）の隣に「編集中」バッジ要素を一度だけ用意する。
+		 * 表示・非表示はCSS側（.bottom-pane.is-editing-entry）に任せ、ここでは要素の存在だけ保証する。
+		 * @param {HTMLFormElement} formElement
+		 * @returns {HTMLElement | null}
+		 */
+		function ensureEditingStatusBadge(formElement) {
+			const title = formElement.closest(".bottom-pane")?.querySelector(".entry-pane-header .pane-title");
+			if (!title) {
+				return null;
+			}
+
+			let badge = /** @type {HTMLElement | null} */ (title.querySelector(".entry-pane-status-badge"));
+			if (!badge) {
+				badge = document.createElement("span");
+				badge.className = "entry-pane-status-badge";
+				badge.textContent = "編集中";
+				title.appendChild(badge);
+			}
+
+			return badge;
+		}
+
+		/**
+		 * 入力パネル全体に編集中の状態クラスを付け外しする。
+		 * ステータス文言はフッターにあり目に入りにくいため、パネル自体の見た目を変えて
+		 * 「今どのモードか」を入力中の視線の近くで一目で分かるようにする。
+		 * @param {HTMLFormElement} formElement
+		 * @param {boolean} isEditing
+		 */
+		function setEditingPaneVisualState(formElement, isEditing) {
+			const pane = formElement.closest(".bottom-pane");
+			pane?.classList.toggle("is-editing-entry", isEditing);
+		}
+
+		/**
 		 * 選択エントリをフォームに反映し、送信モードを「更新」に切り替える。
 		 * @param {any} entry
 		 */
@@ -651,6 +697,8 @@
 			if (!formElement || !submitButton || !resetButton) {
 				return;
 			}
+
+			setEditingPaneVisualState(formElement, true);
 
 			const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 			const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
@@ -677,7 +725,7 @@
 			submitButton.type = "button";
 			submitButton.hidden = true;
 			resetButton.hidden = false;
-			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。新規追加する場合は「新規作成」を押してください。");
+			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。次のカードを追加する場合は「新規カード」を押してください。");
 		}
 
 		/**
@@ -689,6 +737,7 @@
 			syncDateInputs?.(null);
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			if (formElement) {
+				setEditingPaneVisualState(formElement, false);
 				const categoryInput = /** @type {(HTMLInputElement | HTMLSelectElement | null)} */ (formElement.elements.namedItem("category"));
 				const nameInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("name"));
 				const orderInput = /** @type {HTMLInputElement | null} */ (formElement.elements.namedItem("dashboardOrder"));
@@ -712,7 +761,7 @@
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
 			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
 			if (submitButton) {
-				submitButton.textContent = "追加";
+				submitButton.textContent = "新規カード";
 				submitButton.type = "submit";
 				submitButton.hidden = false;
 			}
