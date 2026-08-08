@@ -27,8 +27,6 @@
 	 *   setDocumentActionsApi: (api: any | null) => void,
 	 *   getOutlineViewApi: () => any,
 	 *   setOutlineViewApi: (api: any | null) => void,
-	 *   getBridgeApi: () => any,
-	 *   setBridgeApi: (api: any | null) => void,
 	 *   renderOutlineFromData: (data: any) => void,
 	 *   setFormStatus: (message: string) => void,
 	 *   setTopbarSaveStatus: (message: string) => void,
@@ -39,6 +37,70 @@
 		const FILE_PREVIEW_MAX_SIZE_BYTES = 512_000;
 		const FILE_PREVIEW_MAX_CHARS = 260;
 		const IMAGE_PREVIEW_MAX_SIZE_BYTES = 5_242_880;
+
+		const createDocumentMutations = /** @type {any} */ (globalObject).createDocumentMutations;
+		const documentMutations = typeof createDocumentMutations === "function"
+			? createDocumentMutations({ getCurrentData: deps.getCurrentData })
+			: null;
+
+		if (!documentMutations) {
+			console.error("Document mutations module is not available");
+		}
+
+		/** @type {(mutator: (data: any) => void) => boolean} */
+		const mutateDocument = documentMutations?.mutateDocument ?? (() => false);
+		/** @type {() => void} */
+		const notifyDocumentChanged = documentMutations?.notifyDocumentChanged ?? (() => {});
+
+		/**
+		 * モジュールAPIへの遅延バインド呼び出し口を作る。
+		 *
+		 * モジュールは初期化順の都合で後から差し込まれるため、参照は呼び出し時に解決する。
+		 * 目的の関数が無い場合は、黙って代替値を返さず、どのAPIのどの関数が欠けているかを
+		 * コンソールへ出す。配線ミスが「画面上で何も起きない」に化けると原因追跡が
+		 * 極端に難しくなるため、必ず声を上げさせる。
+		 *
+		 * 呼び出し側が値を必要とする場合は `?? 既定値` を添えるが、そこには
+		 * 実装のコピーを置かない（劣化コピーが二重管理になるため、中立な空値だけを使う）。
+		 *
+		 * @param {string} apiName 診断メッセージ用のAPI名
+		 * @param {() => any} getApi
+		 * @returns {(methodName: string, ...args: any[]) => any}
+		 */
+		function createModuleCaller(apiName, getApi) {
+			/** @type {Set<string>} 同じ欠落を何度も報告しないための記録 */
+			const reportedMethods = new Set();
+
+			return function callModuleMethod(methodName, ...args) {
+				const api = getApi();
+				const method = api?.[methodName];
+				if (typeof method !== "function") {
+					if (!reportedMethods.has(methodName)) {
+						reportedMethods.add(methodName);
+						console.error(`[mito] ${apiName}.${methodName}() が利用できません。モジュールの読み込みを確認してください。`);
+					}
+					return undefined;
+				}
+
+				return method.apply(api, args);
+			};
+		}
+
+		const callRenderer = createModuleCaller("rendererApi", deps.getRendererApi);
+		const callTree = createModuleCaller("treeApi", deps.getTreeApi);
+		const callForm = createModuleCaller("formApi", deps.getFormApi);
+		const callModel = createModuleCaller("modelApi", deps.getModelApi);
+
+		/**
+		 * エントリー詳細を表示し、あわせて入力フォームを同じエントリーの編集状態にする。
+		 * 描画とフォーム同期を必ず対で行うため、呼び出し側で取り違えないよう1箇所にまとめる。
+		 * @param {HTMLElement} mainElement
+		 * @param {any} entry
+		 */
+		function renderEntryDetail(mainElement, entry) {
+			callRenderer("renderEntryDetail", mainElement, entry);
+			callForm("enterEditMode", entry);
+		}
 
 		/**
 		 * @param {string} filePath
@@ -186,24 +248,6 @@
 		}
 
 		/**
-		 * 外部モジュールからブリッジヘルパーを初期化する。
-		 */
-		function initializeBridgeModule() {
-			const createAppBridge = /** @type {any} */ (globalObject).createAppBridge;
-			if (typeof createAppBridge !== "function") {
-				return;
-			}
-
-			deps.setBridgeApi(createAppBridge({
-				getRendererApi: deps.getRendererApi,
-				getTreeApi: deps.getTreeApi,
-				getFormApi: deps.getFormApi,
-				getModelApi: deps.getModelApi,
-				getCurrentData: deps.getCurrentData,
-			}));
-		}
-
-		/**
 		 * 外部モジュールからデータモデルヘルパーを初期化する。
 		 */
 		function initializeDataModel() {
@@ -226,7 +270,6 @@
 
 			deps.setPersistenceApi(createPersistenceModule({
 				getCurrentData: deps.getCurrentData,
-				setCurrentData: deps.setCurrentData,
 				getCurrentFileName: deps.getCurrentFileName,
 				getCurrentFileHandle: deps.getCurrentFileHandle,
 				setCurrentFileName: deps.setCurrentFileName,
@@ -245,37 +288,22 @@
 
 			deps.setOutlineViewApi(createAppOutlineView({
 				getEditingEntryId: deps.getEditingEntryId,
-				resolveProjectName: (/** @type {any} */ data) => deps.getBridgeApi()?.resolveProjectName?.(data) ?? (typeof data?.project === "string" ? data.project : "プロジェクト"),
-				groupActiveEntriesByCategory: (/** @type {any} */ data) => deps.getBridgeApi()?.groupActiveEntriesByCategory?.(data) ?? new Map(),
-				captureOpenCategories: (/** @type {HTMLElement} */ treeElement) => deps.getBridgeApi()?.captureOpenCategories?.(treeElement) ?? null,
-				renderDashboardItem: (/** @type {HTMLElement} */ treeElement, /** @type {any} */ data, /** @type {(item: any, button: HTMLButtonElement) => void} */ onSelect) => deps.getBridgeApi()?.renderDashboardItem?.(treeElement, data, onSelect) ?? null,
-				selectTreeLeaf: (/** @type {HTMLElement} */ treeElement, /** @type {HTMLButtonElement} */ button) => {
-					deps.getBridgeApi()?.selectTreeLeaf?.(treeElement, button);
-				},
-				renderDashboardOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-					deps.getBridgeApi()?.renderDashboardOverview?.(mainElement, data);
-				},
-				renderCategoryTree: (/** @type {HTMLElement} */ treeElement, /** @type {Map<string, any[]>} */ grouped, /** @type {(entry: any, button: HTMLButtonElement) => void} */ onEntrySelect, /** @type {Set<string> | null} */ openCategories) => deps.getBridgeApi()?.renderCategoryTree?.(treeElement, grouped, onEntrySelect, openCategories) ?? null,
-				renderEntryDetail: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ entry) => {
-					deps.getBridgeApi()?.renderEntryDetail?.(mainElement, entry);
-				},
-				renderSettingsButton: (/** @type {any} */ data, /** @type {(item: any) => void} */ onSelect) => deps.getBridgeApi()?.renderSettingsButton?.(data, onSelect) ?? null,
-				clearTreeSelection: (/** @type {HTMLElement} */ treeElement) => {
-					deps.getBridgeApi()?.clearTreeSelection?.(treeElement);
-				},
-				renderSettingsOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-					deps.getBridgeApi()?.renderSettingsOverview?.(mainElement, data);
-				},
-				setTreeMessage: (/** @type {HTMLElement} */ treeElement, /** @type {string} */ message) => {
-					deps.getBridgeApi()?.setTreeMessage?.(treeElement, message);
-				},
-				renderMainMessage: (/** @type {HTMLElement} */ mainElement, /** @type {string} */ message) => {
-					deps.getBridgeApi()?.renderMainMessage?.(mainElement, message);
-				},
-				findActiveEntryById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => deps.getBridgeApi()?.findActiveEntryById?.(data, entryId) ?? null,
-				setFormModeAdd: () => {
-					deps.getBridgeApi()?.setFormModeAdd?.();
-				},
+				notifyDocumentChanged,
+				resolveProjectName: (data) => callModel("resolveProjectName", data) ?? "プロジェクト",
+				groupActiveEntriesByCategory: (data) => callModel("groupActiveEntriesByCategory", data) ?? new Map(),
+				findActiveEntryById: (data, entryId) => callModel("findActiveEntryById", data, entryId) ?? null,
+				captureOpenCategories: (treeElement) => callTree("captureOpenCategories", treeElement) ?? null,
+				renderDashboardItem: (treeElement, data, onSelect) => callTree("renderDashboardItem", treeElement, data, onSelect) ?? null,
+				renderCategoryTree: (treeElement, grouped, onEntrySelect, openCategories) => callTree("renderCategoryTree", treeElement, grouped, onEntrySelect, openCategories) ?? null,
+				selectTreeLeaf: (treeElement, button) => callTree("selectTreeLeaf", treeElement, button),
+				clearTreeSelection: (treeElement) => callTree("clearTreeSelection", treeElement),
+				setTreeMessage: (treeElement, message) => callTree("setTreeMessage", treeElement, message),
+				renderDashboardOverview: (mainElement, data) => callRenderer("renderDashboardOverview", mainElement, data),
+				renderSettingsButton: (data, onSelect) => callRenderer("renderSettingsButton", data, onSelect) ?? null,
+				renderSettingsOverview: (mainElement, data) => callRenderer("renderSettingsOverview", mainElement, data),
+				renderMainMessage: (mainElement, message) => callRenderer("renderMainMessage", mainElement, message),
+				renderEntryDetail,
+				setFormModeAdd: () => callForm("setFormModeAdd"),
 				setCurrentData: deps.setCurrentData,
 			}));
 		}
@@ -292,7 +320,7 @@
 			deps.setDocumentActionsApi(createAppDocumentActions({
 				renderOutlineFromData: deps.renderOutlineFromData,
 				setFormModeAdd: () => {
-					deps.getBridgeApi()?.setFormModeAdd?.();
+					callForm("setFormModeAdd");
 				},
 				setFormStatus: deps.setFormStatus,
 				setTopbarSaveStatus: deps.setTopbarSaveStatus,
@@ -314,11 +342,12 @@
 			deps.setRendererApi(createRendererComposer({
 				getCurrentData: deps.getCurrentData,
 				getEditingEntryId: deps.getEditingEntryId,
+				mutateDocument,
 				onEnterEditMode: (/** @type {any} */ entry) => {
-					deps.getBridgeApi()?.enterEditMode?.(entry);
+					callForm("enterEditMode", entry);
 				},
 				onStartNewEntry: () => {
-					deps.getBridgeApi()?.setFormModeAdd?.();
+					callForm("setFormModeAdd");
 				},
 				onOpenEntryView: (/** @type {any} */ entry) => {
 					const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
@@ -326,8 +355,8 @@
 						return;
 					}
 
-					deps.getBridgeApi()?.focusNewEntryInTree?.(entry);
-					deps.getBridgeApi()?.renderEntryDetail?.(mainElement, entry);
+					callTree("focusNewEntryInTree", entry);
+					renderEntryDetail(mainElement, entry);
 				},
 				onOpenFileLink: async (/** @type {string} */ filePath) => {
 					const normalizedPath = filePath.trim();
@@ -412,7 +441,7 @@
 					}
 
 					const entryId = String(entry?.id ?? "");
-					const targetIndex = deps.getBridgeApi()?.findActiveEntryIndexById?.(currentData, entryId) ?? -1;
+					const targetIndex = callModel("findActiveEntryIndexById", currentData, entryId) ?? -1;
 					if (targetIndex < 0) {
 						return null;
 					}
@@ -420,15 +449,15 @@
 					const updatedEntry = { ...currentData.active[targetIndex], ...payload };
 					currentData.active[targetIndex] = updatedEntry;
 					deps.renderOutlineFromData(currentData);
-					deps.getBridgeApi()?.focusNewEntryInTree?.(updatedEntry);
+					callTree("focusNewEntryInTree", updatedEntry);
 
 					const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
 					if (mainElement) {
-						deps.getBridgeApi()?.renderEntryDetail?.(mainElement, updatedEntry);
+						renderEntryDetail(mainElement, updatedEntry);
 					}
 
 					if (deps.getEditingEntryId() && deps.getEditingEntryId() === entryId) {
-						deps.getBridgeApi()?.enterEditMode?.(updatedEntry);
+						callForm("enterEditMode", updatedEntry);
 					}
 
 					return updatedEntry;
@@ -440,7 +469,7 @@
 					}
 
 					const entryId = String(entry?.id ?? "");
-					const targetIndex = deps.getBridgeApi()?.findActiveEntryIndexById?.(currentData, entryId) ?? -1;
+					const targetIndex = callModel("findActiveEntryIndexById", currentData, entryId) ?? -1;
 					if (targetIndex < 0) {
 						return null;
 					}
@@ -474,8 +503,9 @@
 						return false;
 					}
 
-					currentData.deleted.splice(index, 1);
-					return true;
+					return mutateDocument((documentData) => {
+						documentData.deleted.splice(index, 1);
+					});
 				},
 				onRestoreDeletedEntry: (/** @type {any} */ entry) => {
 					const currentData = deps.getCurrentData();
@@ -505,14 +535,15 @@
 				onSetFormStatus: deps.setFormStatus,
 				onSetTopbarSaveStatus: deps.setTopbarSaveStatus,
 				onProjectNameInput: (/** @type {string} */ nextProject) => {
-					const currentData = deps.getCurrentData();
-					if (!currentData || typeof currentData !== "object") {
+					const applied = mutateDocument((documentData) => {
+						documentData.project = nextProject;
+					});
+					if (!applied) {
 						return;
 					}
 
-					currentData.project = nextProject;
 					document.title = nextProject.trim() ? `${nextProject.trim()} - MITO` : "MITO";
-					deps.getBridgeApi()?.updateOutlineProjectName?.(nextProject);
+					callRenderer("updateOutlineProjectName", nextProject);
 				},
 				onOpenCalendarEditor: () => {
 					const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
@@ -539,8 +570,8 @@
 			}
 
 			deps.setTreeApi(createTreeRenderer({
-				resolveEntryName: (/** @type {any} */ entry) => deps.getBridgeApi()?.resolveEntryName?.(entry) ?? `項目${entry?.id ?? ""}`,
-				resolveDashboardLabel: (/** @type {any} */ data) => deps.getBridgeApi()?.resolveDashboardLabel?.(data) ?? "ダッシュボード",
+				resolveEntryName: (/** @type {any} */ entry) => callRenderer("resolveEntryName", entry) ?? `項目${entry?.id ?? ""}`,
+				resolveDashboardLabel: (/** @type {any} */ data) => callRenderer("resolveDashboardLabel", data) ?? "ダッシュボード",
 			}));
 		}
 
@@ -557,29 +588,30 @@
 				getCurrentData: deps.getCurrentData,
 				getEditingEntryId: deps.getEditingEntryId,
 				setEditingEntryId: deps.setEditingEntryId,
-				resolveDashboardLabel: (/** @type {any} */ data) => deps.getBridgeApi()?.resolveDashboardLabel?.(data) ?? "ダッシュボード",
+				notifyDocumentChanged,
+				resolveDashboardLabel: (/** @type {any} */ data) => callRenderer("resolveDashboardLabel", data) ?? "ダッシュボード",
 				setFormStatus: deps.setFormStatus,
-				findActiveEntryIndexById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => deps.getBridgeApi()?.findActiveEntryIndexById?.(data, entryId) ?? -1,
-				getNextActiveId: (/** @type {any} */ data) => deps.getBridgeApi()?.getNextActiveId?.(data) ?? 1,
+				findActiveEntryIndexById: (/** @type {any} */ data, /** @type {string | null} */ entryId) => callModel("findActiveEntryIndexById", data, entryId) ?? -1,
+				getNextActiveId: (/** @type {any} */ data) => callModel("getNextActiveId", data) ?? 1,
 				renderOutlineFromData: deps.renderOutlineFromData,
 				renderDashboardOverview: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ data) => {
-					deps.getBridgeApi()?.renderDashboardOverview?.(mainElement, data);
+					callRenderer("renderDashboardOverview", mainElement, data);
 				},
 				focusNewEntryInTree: (/** @type {any} */ entry) => {
-					deps.getBridgeApi()?.focusNewEntryInTree?.(entry);
+					callTree("focusNewEntryInTree", entry);
 				},
 				renderEntryDetail: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ entry) => {
-					deps.getBridgeApi()?.renderEntryDetail?.(mainElement, entry);
+					renderEntryDetail(mainElement, entry);
 				},
 			}));
 		}
 
 		/**
 		 * 全モジュールを依存関係の順序に従って初期化する。
-		 * ブリッジが最初に来るのは他のモジュールが getBridgeApi() を呼び出すため。
+		 * 各モジュールへ渡す呼び出し口（callRenderer など）は呼び出し時に解決するため、
+		 * ここでの順序は「生成時点で他モジュールの実体が必要か」だけで決めてよい。
 		 */
 		function initializeAllModules() {
-			initializeBridgeModule();
 			initializeRenderers();
 			initializeTreeRenderer();
 			initializeEntryFormModule();
@@ -591,7 +623,6 @@
 
 		return {
 			initializeAllModules,
-			initializeBridgeModule,
 			initializeRenderers,
 			initializeTreeRenderer,
 			initializeEntryFormModule,

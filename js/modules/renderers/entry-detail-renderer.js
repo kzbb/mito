@@ -16,30 +16,17 @@
 	 */
 	function createEntryDetailRenderer(deps) {
 		const createLinkPreviewHandler = /** @type {any} */ (globalObject).createLinkPreviewHandler;
+		// 共有ヘルパー。代替実装は renderer-fallbacks.js 側に集約されている。
+		// 読み込まれていないのは配置ミスなので、黙って劣化させず即座に失敗させる。
 		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
-		const rendererFallbacks = typeof createRendererFallbacks === "function"
-			? createRendererFallbacks()
-			: null;
-		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
-		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
-			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-				/** @type {Record<string, string>} */
-				const values = {};
-				for (const header of headers) {
-					values[header] = "";
-				}
-				return values;
-			});
-		const renderMarkdownToHtml = rendererFallbacks?.renderMarkdownToHtml
-			?? ((/** @type {string} */ source) => source
-				.replace(/&/g, "&amp;")
-				.replace(/</g, "&lt;")
-				.replace(/>/g, "&gt;")
-				.replace(/\"/g, "&quot;")
-				.replace(/'/g, "&#39;")
-				.replace(/\n/g, "<br>"));
-		const resolveEntryByName = rendererFallbacks?.makeEntryByNameResolver(deps.getCurrentData, deps.resolveEntryName)
-			?? (() => null);
+		if (typeof createRendererFallbacks !== "function") {
+			throw new Error("[mito] renderer-fallbacks.js が読み込まれていません");
+		}
+		const shared = createRendererFallbacks();
+		const resolveCalendarSchema = shared.resolveCalendarSchema;
+		const resolveTimelineValues = shared.resolveTimelineValues;
+		const renderMarkdownToHtml = shared.renderMarkdownToHtml;
+		const resolveEntryByName = shared.makeEntryByNameResolver(deps.getCurrentData, deps.resolveEntryName);
 
 		const linkPreviewHandler = typeof createLinkPreviewHandler === "function"
 			? createLinkPreviewHandler({
@@ -131,7 +118,8 @@
 			const descriptionText = typeof entry?.description === "string" ? entry.description : "";
 			if (descriptionText.trim().length > 0) {
 				const summaryHtml = document.createElement("div");
-				summaryHtml.className = "entry-description";
+				// md-body: Markdown本文の共通スタイル（styles/markdown.css）
+				summaryHtml.className = "entry-description md-body";
 				summaryHtml.innerHTML = renderMarkdownToHtml(descriptionText.trim());
 				// リンクのクリック・ホバー・フォーカスをすべて linkPreviewHandler に委譲する
 				summaryHtml.addEventListener("click", (event) => {

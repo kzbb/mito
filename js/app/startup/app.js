@@ -36,9 +36,6 @@ let documentActionsApi = null;
 /** @type {any | null} 左パネル（アウトライン）モジュールのAPI */
 let outlineViewApi = null;
 
-/** @type {any | null} モジュール間の橋渡しをするブリッジAPI */
-let bridgeApi = null;
-
 /** @type {any | null} モジュール初期化コーディネーターのAPI */
 let moduleInitializersApi = null;
 
@@ -99,9 +96,29 @@ window.addEventListener("beforeunload", (event) => {
 	event.returnValue = "";
 });
 
+/**
+ * 起動時の初期化失敗を画面に出す。
+ * モジュールの配置ミスは真っ白な画面になって原因が分からなくなりやすいので、
+ * コンソールだけでなく本文にも理由を残す。
+ * @param {unknown} error
+ */
+function renderStartupFailure(error) {
+	console.error("Failed to initialize MITO", error);
+	const mainElement = document.querySelector(".main-window");
+	if (!mainElement) {
+		return;
+	}
+
+	mainElement.textContent = "";
+	const message = document.createElement("p");
+	message.textContent = `起動に失敗しました: ${error instanceof Error ? error.message : String(error)}`;
+	mainElement.appendChild(message);
+}
+
 function initializeModules() {
 	const createAppModuleInitializers = /** @type {any} */ (window).createAppModuleInitializers;
 	if (typeof createAppModuleInitializers !== "function") {
+		renderStartupFailure(new Error("app-module-initializers.js が読み込まれていません"));
 		return;
 	}
 
@@ -157,10 +174,6 @@ function initializeModules() {
 		setOutlineViewApi: (/** @type {any | null} */ api) => {
 			outlineViewApi = api;
 		},
-		getBridgeApi: () => bridgeApi,
-		setBridgeApi: (/** @type {any | null} */ api) => {
-			bridgeApi = api;
-		},
 		renderOutlineFromData: (/** @type {any} */ data) => {
 			renderOutlineFromData(data);
 		},
@@ -175,7 +188,11 @@ function initializeModules() {
 		},
 	});
 
-	moduleInitializersApi?.initializeAllModules?.();
+	try {
+		moduleInitializersApi?.initializeAllModules?.();
+	} catch (error) {
+		renderStartupFailure(error);
+	}
 }
 
 /**
@@ -242,8 +259,17 @@ function persistAutosaveSnapshot() {
 /**
  * localStorageのオートセーブスナップショットを削除する。
  * ファイル保存が成功した後に呼ばれる。
+ *
+ * デバウンス待ちのタイマーも必ず解除する。解除しないと、保存直前の変更で
+ * 予約されたタイマーが保存後に発火し、保存済みデータのスナップショットを
+ * 書き戻してしまう（次回起動で不要な復元確認が出る原因になる）。
  */
 function clearAutosaveSnapshot() {
+	if (autosaveTimerId !== null) {
+		window.clearTimeout(autosaveTimerId);
+		autosaveTimerId = null;
+	}
+
 	try {
 		window.localStorage.removeItem(AUTOSAVE_STORAGE_KEY);
 	} catch (error) {
@@ -295,8 +321,24 @@ function tryRestoreAutosaveSnapshot() {
 	}
 
 	const updatedAt = typeof snapshot.updatedAt === "string" ? snapshot.updatedAt : "不明";
-	const shouldRestore = window.confirm(`未保存の下書きが見つかりました（${updatedAt}）。復元しますか？`);
+	const shouldRestore = window.confirm(
+		`未保存の下書きが見つかりました（${updatedAt}）。復元しますか？\n\n「キャンセル」を選ぶとこの下書きは破棄されます。`,
+	);
 	if (!shouldRestore) {
+		// 破棄しないと、以降リロードするたびに同じ確認が出続けてしまう。
+		// 破棄されることはダイアログ本文で明示している。
+		clearAutosaveSnapshot();
+		setFormStatus("未保存の下書きを破棄しました。");
+		return;
+	}
+
+	// 読み込み経路と同じ正規化を通す。localStorageの内容は壊れている可能性があるため、
+	// 生のまま描画側へ渡さない。
+	const normalized = normalizeLoadedDocument(snapshot.data);
+	if (!normalized) {
+		clearAutosaveSnapshot();
+		setFormStatus("下書きデータが壊れていたため復元できませんでした。");
+		setTopbarSaveStatus("復元失敗");
 		return;
 	}
 
@@ -305,10 +347,29 @@ function tryRestoreAutosaveSnapshot() {
 		? snapshot.fileName
 		: "recovered.json";
 	queueNextDataChangeDirtyState(true);
-	renderOutlineFromData(snapshot.data);
+	renderOutlineFromData(normalized);
 	setFormStatus("下書きデータを復元しました。保存して確定してください。");
 	setTopbarSaveStatus("未保存: 復元データ");
 	setDirty(true);
+}
+
+/**
+ * 読み込んだJSONを、ファイル読み込みと同じ規則で正規化する。
+ * 正規化に失敗した場合はnullを返す。
+ * @param {any} rawData
+ * @returns {any | null}
+ */
+function normalizeLoadedDocument(rawData) {
+	if (!documentActionsApi || typeof documentActionsApi.normalizeDocument !== "function") {
+		return rawData;
+	}
+
+	try {
+		return documentActionsApi.normalizeDocument(rawData);
+	} catch (error) {
+		console.error("Failed to normalize document", error);
+		return null;
+	}
 }
 
 /**
@@ -344,17 +405,22 @@ function renderFileLoadError(message) {
 /**
  * トップバーの「開く」から選択されたJSONファイルを処理する。
  * @param {File} file
+ * @param {any | null} fileHandle showOpenFilePicker で得たハンドル。未対応環境ではnull
  * @returns {Promise<void>}
  */
-async function handleOpenFile(file) {
+async function handleOpenFile(file, fileHandle) {
 	if (!requestDiscardUnsavedChanges("別ファイルを開く操作")) {
 		setFormStatus("ファイルを開く操作をキャンセルしました。");
 		return;
 	}
 
+	// 相対パスリンクの基準フォルダーは開いていた文書に紐づくため、
+	// 別の文書を開く時点で必ず捨てる。
+	linkBaseDirectoryHandle = null;
+
 	if (documentActionsApi && typeof documentActionsApi.handleOpenFile === "function") {
 		queueNextDataChangeDirtyState(false);
-		const opened = await documentActionsApi.handleOpenFile(file);
+		const opened = await documentActionsApi.handleOpenFile(file, fileHandle);
 		if (!opened) {
 			queueNextDataChangeDirtyState(null);
 		}
@@ -424,8 +490,8 @@ if (typeof layoutSetup === "function") {
 if (typeof fileActionSetup === "function") {
 	fileActionSetup({
 		onNew: handleNewFile,
-		onOpenFile: (/** @type {File} */ file) => {
-			void handleOpenFile(file);
+		onOpenFile: (/** @type {File} */ file, /** @type {any | null} */ fileHandle) => {
+			void handleOpenFile(file, fileHandle);
 		},
 		onSave: () => {
 			void saveCurrentData();
@@ -434,6 +500,6 @@ if (typeof fileActionSetup === "function") {
 }
 
 renderWaitingForFile();
-bridgeApi?.setupEntryForm?.();
+formApi?.setupEntryForm?.();
 setTopbarSaveStatus("未保存");
 tryRestoreAutosaveSnapshot();

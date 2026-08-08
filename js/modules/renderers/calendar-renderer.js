@@ -3,6 +3,7 @@
 (function registerCalendarRenderer(globalObject) {
 	/**
 	 * @param {{
+	 *   mutateDocument: (mutator: (data: any) => void) => boolean,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void
 	 * }} deps
@@ -105,8 +106,19 @@
 			let selectedRowIndex = 0;
 			let selectedColumnIndex = 0;
 
+			/**
+			 * 編集中のグリッドをCSVとしてドキュメントへ書き戻し、変更を通知する。
+			 * 書き込み先は常に最新のドキュメントを取り直すため、
+			 * この画面を開いたまま保存してもグリッドの編集が迷子にならない。
+			 */
+			const persistGrid = () => {
+				deps.mutateDocument((documentData) => {
+					persistCalendar(documentData, gridToCsv(grid));
+				});
+			};
+
 			// CSVファイルを読み込んでグリッドデータを置き換え、再描画する
-		fileInput.addEventListener("change", async () => {
+			fileInput.addEventListener("change", async () => {
 				const selectedFile = fileInput.files?.[0] ?? null;
 				if (!selectedFile) {
 					return;
@@ -120,8 +132,7 @@
 					}
 					selectedRowIndex = 0;
 					selectedColumnIndex = 0;
-					persistCalendar(data, gridToCsv(grid));
-					document.dispatchEvent(new CustomEvent("mito:data-changed"));
+					persistGrid();
 					renderGrid();
 					deps.onSetFormStatus(`CSVを読み込みました: ${selectedFile.name}`);
 					deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -133,7 +144,7 @@
 			});
 
 			// 選択中の行を削除する（1行未満にはできない）
-		deleteRowButton.addEventListener("click", () => {
+			deleteRowButton.addEventListener("click", () => {
 				if (grid.length <= 1) {
 					deps.onSetFormStatus("行は1行未満にできません。");
 					return;
@@ -142,15 +153,14 @@
 				const targetRow = clampIndex(selectedRowIndex, grid.length - 1);
 				grid.splice(targetRow, 1);
 				selectedRowIndex = Math.max(0, Math.min(selectedRowIndex, grid.length - 1));
-				persistCalendar(data, gridToCsv(grid));
-				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+				persistGrid();
 				renderGrid();
 				deps.onSetFormStatus(`行${targetRow + 1}を削除しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 			});
 
 			// 選択中の列を削除する（1列未満にはできない）
-		deleteColumnButton.addEventListener("click", () => {
+			deleteColumnButton.addEventListener("click", () => {
 				const width = getGridWidth(grid);
 				if (width <= 1) {
 					deps.onSetFormStatus("列は1列未満にできません。");
@@ -162,15 +172,14 @@
 					row.splice(targetColumn, 1);
 				}
 				selectedColumnIndex = Math.max(0, Math.min(selectedColumnIndex, getGridWidth(grid) - 1));
-				persistCalendar(data, gridToCsv(grid));
-				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+				persistGrid();
 				renderGrid();
 				deps.onSetFormStatus(`列${resolveColumnLabel(targetColumn)}を削除しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 			});
 
 			// 現在のグリッドをCSVとしてダウンロードする
-		exportButton.addEventListener("click", () => {
+			exportButton.addEventListener("click", () => {
 				const csvText = gridToCsv(grid);
 				downloadCsv(csvText, resolveExportFileName(data));
 				deps.onSetFormStatus("CSVを書き出しました。");
@@ -290,8 +299,7 @@
 						});
 						cellInput.addEventListener("input", () => {
 							grid[rowIndex][colIndex] = cellInput.value;
-							persistCalendar(data, gridToCsv(grid));
-							document.dispatchEvent(new CustomEvent("mito:data-changed"));
+							persistGrid();
 							info.textContent = `${grid.length}行 x ${getGridWidth(grid)}列`;
 							deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
 						});
@@ -338,8 +346,7 @@
 				const targetRow = clampIndex(index, grid.length);
 				grid.splice(targetRow, 0, Array.from({ length: width }, () => ""));
 				selectedRowIndex = targetRow;
-				persistCalendar(data, gridToCsv(grid));
-				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+				persistGrid();
 				renderGrid();
 				deps.onSetFormStatus(`行${targetRow + 1}に行を挿入しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");
@@ -355,8 +362,7 @@
 					row.splice(targetColumn, 0, "");
 				}
 				selectedColumnIndex = targetColumn;
-				persistCalendar(data, gridToCsv(grid));
-				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+				persistGrid();
 				renderGrid();
 				deps.onSetFormStatus(`列${resolveColumnLabel(targetColumn)}に列を挿入しました。`);
 				deps.onSetTopbarSaveStatus("未保存: カレンダー変更あり");

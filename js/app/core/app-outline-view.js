@@ -4,6 +4,7 @@
 	/**
 	 * @param {{
 	 *   getEditingEntryId: () => string | null,
+	 *   notifyDocumentChanged: () => void,
 	 *   resolveProjectName: (data: any) => string,
 	 *   groupActiveEntriesByCategory: (data: any) => Map<string, any[]>,
 	 *   captureOpenCategories: (treeElement: HTMLElement) => Set<string> | null,
@@ -154,7 +155,7 @@
 				deps.setFormModeAdd();
 			}
 
-			document.dispatchEvent(new CustomEvent("mito:data-changed"));
+			deps.notifyDocumentChanged();
 		}
 
 		/**
@@ -175,7 +176,7 @@
 			deps.renderMainMessage(mainElement, "");
 			populateCategoryOptions({ active: [], deleted: [] });
 			deps.setFormModeAdd();
-			document.dispatchEvent(new CustomEvent("mito:data-changed"));
+			deps.notifyDocumentChanged();
 		}
 
 		/**

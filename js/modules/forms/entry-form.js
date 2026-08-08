@@ -6,6 +6,7 @@
 	 *   getCurrentData: () => any,
 	 *   getEditingEntryId: () => string | null,
 	 *   setEditingEntryId: (entryId: string | null) => void,
+	 *   notifyDocumentChanged: () => void,
 	 *   resolveDashboardLabel: (data: any) => string,
 	 *   setFormStatus: (message: string) => void,
 	 *   findActiveEntryIndexById: (data: any, entryId: string | null) => number,
@@ -19,21 +20,17 @@
 	function createEntryFormModule(deps) {
 		const createCalendarUtils = /** @type {any} */ (globalObject).createCalendarUtils;
 		const calendarUtils = typeof createCalendarUtils === "function" ? createCalendarUtils() : null;
+		// 共有ヘルパー。代替実装は renderer-fallbacks.js 側に集約されている。
+		// 読み込まれていないのは配置ミスなので、黙って劣化させず即座に失敗させる。
 		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
-		const rendererFallbacks = typeof createRendererFallbacks === "function"
-			? createRendererFallbacks()
-			: null;
-		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
+		if (typeof createRendererFallbacks !== "function") {
+			throw new Error("[mito] renderer-fallbacks.js が読み込まれていません");
+		}
+		const shared = createRendererFallbacks();
+		const resolveCalendarSchema = shared.resolveCalendarSchema;
 		const findCalendarRowByValue = calendarUtils?.findCalendarRowByValue ?? (() => null);
-		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
-			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-				/** @type {Record<string, string>} */
-				const values = {};
-				for (const header of headers) {
-					values[header] = "";
-				}
-				return values;
-			});
+		const cssEscapeAttr = shared.cssEscape;
+		const resolveTimelineValues = shared.resolveTimelineValues;
 
 		/** カードの色として選択できるポストイット風の5色（16進カラーコード、style.cssの配色に準拠） */
 		const ENTRY_CARD_COLORS = ["#ffffff", "#ffeef3", "#fffde7", "#eaf8ec", "#e9f2fb"];
@@ -259,7 +256,8 @@
 				return;
 			}
 
-			// カテゴリや名前が変わった場合はツリーも再描画が必要。それ以外は data-changed のみ発火する
+			// カテゴリや名前が変わった場合はツリーも再描画が必要。それ以外は変更通知のみ発火する。
+			// どちらの経路でも変更通知はちょうど1回に保つ（renderOutlineFromData が内部で発火する）。
 			const treeAffectingChange = nextEntry.category !== targetEntry.category
 				|| nextEntry.name !== targetEntry.name;
 
@@ -269,7 +267,7 @@
 				deps.renderOutlineFromData(currentData);
 				deps.focusNewEntryInTree(nextEntry);
 			} else {
-				document.dispatchEvent(new CustomEvent("mito:data-changed"));
+				deps.notifyDocumentChanged();
 			}
 
 			if (activeView === "dashboard") {
@@ -510,17 +508,6 @@
 			return {
 				dateCalendar: values,
 			};
-		}
-
-		/**
-		 * @param {string} value
-		 * @returns {string}
-		 */
-		function cssEscapeAttr(value) {
-			if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-				return CSS.escape(value);
-			}
-			return value.replace(/(["\\])/g, "\\$1");
 		}
 
 		/**

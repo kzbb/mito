@@ -1,0 +1,109 @@
+/*
+ * 説明欄Markdown（markdown-engine.js の出力）の共通スタイル。
+ *
+ * 文字サイズ・色・外側の余白は文脈側（.entry-description /
+ * .dashboard-entry-card-description）が決め、ここでは要素同士の
+ * 構造と間隔だけを決める。文脈ごとに変えたい値は、下の変数を
+ * 上書きして調整する。
+ */
+
+.md-body {
+	/* 隣接するブロック要素の間隔 */
+	--md-block-gap: 0.36rem;
+	/* 見出しのサイズ。本文サイズからの相対で指定する */
+	--md-h1-size: 1.25em;
+	--md-h2-size: 1.12em;
+	--md-h3-size: 1.02em;
+	--md-h4-size: 0.94em;
+
+	word-break: break-word;
+}
+
+/*
+ * 直下のブロック要素からは余白を取り除き、間隔は下の隣接セレクタだけで付ける。
+ * 詳細度を (0,1,0) で揃えるのが要点。`.md-body h2` のような形で margin を
+ * 打ち消すと (0,1,1) になり、`.md-body > * + *` に勝ってしまって間隔が消える。
+ */
+.md-body > * {
+	margin: 0;
+}
+
+/* 隣り合うブロックの間だけ空ける。先頭と末尾には余白を作らない */
+.md-body > * + * {
+	margin-top: var(--md-block-gap);
+}
+
+.md-body h1,
+.md-body h2,
+.md-body h3,
+.md-body h4,
+.md-body h5,
+.md-body h6 {
+	line-height: 1.35;
+	font-weight: 700;
+	color: var(--fg);
+}
+
+.md-body h1 {
+	font-size: var(--md-h1-size);
+}
+
+.md-body h2 {
+	font-size: var(--md-h2-size);
+}
+
+.md-body h3 {
+	font-size: var(--md-h3-size);
+}
+
+.md-body h4,
+.md-body h5,
+.md-body h6 {
+	font-size: var(--md-h4-size);
+}
+
+.md-body ul {
+	padding-left: 1.1em;
+}
+
+.md-body ol {
+	padding-left: 1.25em;
+}
+
+.md-body blockquote {
+	padding-left: 0.55em;
+	border-left: 3px solid var(--blockquote-border);
+	color: var(--muted);
+}
+
+.md-body a {
+	color: var(--accent-2);
+	text-decoration: underline;
+	text-underline-offset: 0.12em;
+}
+
+.md-body a:hover {
+	color: var(--text);
+}
+
+.md-body code {
+	font-size: 0.94em;
+	background: var(--code-bg);
+	padding: 0.05em 0.24em;
+	border-radius: 4px;
+}
+
+.md-body pre {
+	padding: 0.28em 0.4em;
+	border-radius: 6px;
+	background: var(--code-bg);
+	overflow-x: auto;
+}
+
+/* コードブロック内では二重の背景・字下げを避ける */
+.md-body pre code {
+	font-size: inherit;
+	background: none;
+	padding: 0;
+	border-radius: 0;
+}

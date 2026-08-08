@@ -6,6 +6,7 @@
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   getEditingEntryId: () => string | null,
+	 *   mutateDocument: (mutator: (data: any) => void) => boolean,
 	 *   onEnterEditMode: (entry: any) => void,
 	 *   onStartNewEntry: () => void,
 	 *   onOpenEntryView: (entry: any) => void,
@@ -88,6 +89,7 @@
 		const settingsApi = typeof createSettingsRenderer === "function"
 			? createSettingsRenderer({
 				getCurrentData: deps.getCurrentData,
+				mutateDocument: deps.mutateDocument,
 				onPermanentlyDeleteDeletedEntry: deps.onPermanentlyDeleteDeletedEntry,
 				onRestoreDeletedEntry: deps.onRestoreDeletedEntry,
 				onSetFormStatus: deps.onSetFormStatus,
@@ -103,6 +105,7 @@
 			? createDashboardRenderer({
 				getCurrentData: deps.getCurrentData,
 				getEditingEntryId: deps.getEditingEntryId,
+				mutateDocument: deps.mutateDocument,
 				onEnterEditMode: deps.onEnterEditMode,
 				onStartNewEntry: deps.onStartNewEntry,
 				onOpenEntryView: deps.onOpenEntryView,
@@ -115,6 +118,7 @@
 
 		const calendarApi = typeof createCalendarRenderer === "function"
 			? createCalendarRenderer({
+				mutateDocument: deps.mutateDocument,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
 			})

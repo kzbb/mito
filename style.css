@@ -2,6 +2,7 @@
 @import url("./styles/base.css");
 @import url("./styles/layout.css");
 @import url("./styles/tree.css");
+@import url("./styles/markdown.css");
 @import url("./styles/wiki.css");
 @import url("./styles/settings.css");
 @import url("./styles/calendar.css");

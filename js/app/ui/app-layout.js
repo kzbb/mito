@@ -113,12 +113,16 @@
 					+ (Number.parseFloat(paneStyle.paddingBottom) || 0);
 				let childrenHeight = 0;
 				for (const child of bottomPane.children) {
+					if (!(child instanceof HTMLElement)) {
+						continue;
+					}
+
 					const childStyle = getComputedStyle(child);
 					childrenHeight += child.offsetHeight
 						+ (Number.parseFloat(childStyle.marginTop) || 0)
 						+ (Number.parseFloat(childStyle.marginBottom) || 0);
 				}
-				const bottomContentHeight = panePaddingY + childrenHeight　* 1.01; // 予備スペースとして1%増し
+				const bottomContentHeight = panePaddingY + childrenHeight * 1.01; // 予備スペースとして1%増し
 
 				const desiredTop = availableHeight - splitterHeight - bottomContentHeight;
 				const topHeight = Math.max(minTopPx, desiredTop);

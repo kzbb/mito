@@ -8,6 +8,15 @@
 	 * }} deps
 	 */
 	function createTreeRenderer(deps) {
+		// 共有ヘルパー。代替実装は renderer-fallbacks.js 側に集約されている。
+		// 読み込まれていないのは配置ミスなので、黙って劣化させず即座に失敗させる。
+		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
+		if (typeof createRendererFallbacks !== "function") {
+			throw new Error("[mito] renderer-fallbacks.js が読み込まれていません");
+		}
+		const shared = createRendererFallbacks();
+		const cssEscape = shared.cssEscape;
+
 		/**
 		 * @param {HTMLElement} treeElement
 		 * @returns {Set<string> | null}
@@ -168,7 +177,14 @@
 		 * @param {string} message
 		 */
 		function setTreeMessage(treeElement, message) {
-			treeElement.innerHTML = `<div class="tree-item"><span class="tree-leaf">${message}</span></div>`;
+			treeElement.innerHTML = "";
+			const item = document.createElement("div");
+			item.className = "tree-item";
+			const leaf = document.createElement("span");
+			leaf.className = "tree-leaf";
+			leaf.textContent = message;
+			item.appendChild(leaf);
+			treeElement.appendChild(item);
 		}
 
 		/**
@@ -181,18 +197,6 @@
 			button.className = "tree-leaf tree-leaf-button";
 			button.textContent = label;
 			return button;
-		}
-
-		/**
-		 * @param {string} value
-		 * @returns {string}
-		 */
-		function cssEscape(value) {
-			if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-				return CSS.escape(value);
-			}
-
-			return value.replace(/(["\\])/g, "\\$1");
 		}
 
 		return {

@@ -4,6 +4,7 @@
 	/**
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   mutateDocument: (mutator: (data: any) => void) => boolean,
 	 *   onPermanentlyDeleteDeletedEntry: (entry: any) => boolean,
 	 *   onRestoreDeletedEntry: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
@@ -160,18 +161,22 @@
 				input.value = String(value ?? "");
 				input.setAttribute("aria-label", key);
 				// 設定値の型（数値・真偽値・null）を保ちながらデータを更新する。
-			// dashboardLabel / masterCategoryDashboard はダッシュボードボタンにも即時反映する。
-			input.addEventListener("input", () => {
-					const nextData = deps.getCurrentData();
-					if (!nextData || !nextData.settings || typeof nextData.settings !== "object") {
+				// dashboardLabel / masterCategoryDashboard はダッシュボードボタンにも即時反映する。
+				input.addEventListener("input", () => {
+					const nextValue = parseSettingValue(input.value, value);
+					const applied = deps.mutateDocument((documentData) => {
+						if (!documentData.settings || typeof documentData.settings !== "object") {
+							documentData.settings = {};
+						}
+
+						documentData.settings[key] = nextValue;
+					});
+					if (!applied) {
 						return;
 					}
 
-					const nextValue = parseSettingValue(input.value, value);
-					nextData.settings[key] = nextValue;
-
 					if (key === "dashboardLabel" || key === "masterCategoryDashboard") {
-						updateDashboardButtonLabel(nextData);
+						updateDashboardButtonLabel(deps.getCurrentData());
 					}
 
 					deps.onSetFormStatus(`設定を更新しました: ${key}`);

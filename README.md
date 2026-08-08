@@ -1,6 +1,6 @@
 # MITO
 
-https://mito.bblab.org
+<https://mito.bblab.org>
 
 MITOは、JSONドキュメントを読み込み・編集・保存する、ブラウザ上で動く年表/ナレッジ整理ツールです。
 
@@ -31,6 +31,44 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
 - 一部機能（`showSaveFilePicker` / `showDirectoryPicker`）は対応ブラウザで有効になります。
 - 未対応環境では保存時にダウンロード方式へフォールバックします。
 
+## 開発
+
+ビルドは不要ですが、型チェックとテストは用意しています。
+
+```sh
+# 型チェック（全JSファイルが // @ts-check 前提で書かれています）
+npx tsc -p tsconfig.json
+
+# ユニットテスト（依存パッケージなし）
+node tests/unit.js
+```
+
+`tests/unit.js` はCSV解析・ドキュメント正規化・Markdown変換・カレンダー行マッチングといった
+純粋関数を対象にしています。
+
+`tests/smoke.js` はヘッドレスChromiumで主要フローを通し、
+「データを変更したのに未保存フラグが立たない」類の回帰を検出します。
+リポジトリをビルド不要のまま保つため依存は同梱していないので、実行手順は
+ファイル冒頭のコメントを参照してください。
+
+### モジュール間の呼び出し
+
+`js/app/*` から各モジュールを呼ぶときは、`app-module-initializers.js` の
+`callRenderer` / `callTree` / `callForm` / `callModel` を経由します。
+参照は呼び出し時に解決され、目的の関数が無ければコンソールにどのAPIの
+どの関数が欠けているかを出します。
+
+代替実装（フォールバック）を呼び出し側に書かないでください。
+同じ処理の劣化コピーが増えると、本体を直したときに片方だけ古くなります。
+レンダラー共通のヘルパーは `renderer-fallbacks.js` に1つだけ置いています。
+
+### データ変更時の約束
+
+`currentData` を書き換える処理は、必ず `mito:data-changed` の通知を伴わせてください。
+通知を忘れると未保存フラグが立たず、離脱警告もオートセーブも働かないまま編集内容が失われます。
+これを取り違えないよう、変更と通知を対で行う `mutateDocument()`
+（`js/modules/data/document-mutations.js`）を経由させる方針にしています。
+
 ## ファイル構成（現状）
 
 ```text
@@ -38,6 +76,10 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
 |- index.html
 |- README.md
 |- style.css
+|- tsconfig.json
+|- tests/
+|  |- unit.js
+|  `- smoke.js
 |- styles/
 |  |- base.css
 |  |- calendar.css
@@ -48,6 +90,7 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
 |  |- layout-resizers.css
 |  |- layout-shell.css
 |  |- layout.css
+|  |- markdown.css
 |  |- settings.css
 |  |- tokens.css
 |  |- tree.css
@@ -58,7 +101,6 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
    |  |  |- app-document-actions.js
    |  |  `- app-file-actions.js
    |  |- core/
-   |  |  |- app-bridge.js
    |  |  `- app-outline-view.js
    |  |- startup/
    |  |  |- app-module-initializers.js
@@ -68,6 +110,8 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
    `- modules/
       |- data/
       |  |- data-model.js
+      |  |- document-mutations.js
+      |  |- file-download.js
       |  `- persistence.js
       |- forms/
       |  `- entry-form.js
@@ -102,8 +146,14 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
 - `js/app/actions/app-document-actions.js`
   - 新規テンプレート作成
   - 読み込みJSONの正規化
+- `js/modules/data/document-mutations.js`
+  - ドキュメント変更と `mito:data-changed` 通知の対管理
+- `js/modules/renderers/renderer-fallbacks.js`
+  - レンダラー間で共有するヘルパー（カレンダー解析・Markdown変換・エスケープ）の一元管理
 - `js/modules/data/persistence.js`
   - 保存処理（File System Access API + フォールバック）
+- `js/modules/data/file-download.js`
+  - テキストのダウンロード保存（JSONとCSVで共通）
 - `js/modules/renderers/renderer-composer.js`
   - 詳細/設定/ダッシュボード/カレンダー描画の統合
 - `js/modules/renderers/calendar-renderer.js`
@@ -140,12 +190,17 @@ MITOは、JSONドキュメントを読み込み・編集・保存する、ブラ
         "列ヘッダ2": "値2"
       },
       "description": "Markdown本文",
-	  "dashboardOrder": 0
+      "color": "#ffffff",
+      "dashboardOrder": 0
     }
   ],
   "deleted": []
 }
 ```
+
+`color` はダッシュボードのカードの背景色です。入力フォームで選べる5色
+（`#ffffff` / `#ffeef3` / `#fffde7` / `#eaf8ec` / `#e9f2fb`）のいずれかで、
+それ以外の値や未指定の場合は `#ffffff` として扱われます。
 
 ## 説明欄Markdown仕様
 

@@ -5,6 +5,7 @@
 	 * @param {{
 	 *   getCurrentData: () => any,
 	 *   getEditingEntryId: () => string | null,
+	 *   mutateDocument: (mutator: (data: any) => void) => boolean,
 	 *   onEnterEditMode: (entry: any) => void,
 	 *   onStartNewEntry: () => void,
 	 *   onOpenEntryView: (entry: any) => void,
@@ -20,30 +21,18 @@
 		let dashboardBackgroundClickHandlerInstalled = false;
 
 		const createLinkPreviewHandler = /** @type {any} */ (globalObject).createLinkPreviewHandler;
+		// 共有ヘルパー。代替実装は renderer-fallbacks.js 側に集約されている。
+		// 読み込まれていないのは配置ミスなので、黙って劣化させず即座に失敗させる。
 		const createRendererFallbacks = /** @type {any} */ (globalObject).createRendererFallbacks;
-		const rendererFallbacks = typeof createRendererFallbacks === "function"
-			? createRendererFallbacks()
-			: null;
-		const resolveCalendarSchema = rendererFallbacks?.resolveCalendarSchema ?? (() => ({ headers: [], rows: [] }));
-		const resolveTimelineValues = rendererFallbacks?.resolveTimelineValues
-			?? ((/** @type {any} */ _entry, /** @type {string} */ _key, /** @type {string[]} */ headers) => {
-				/** @type {Record<string, string>} */
-				const values = {};
-				for (const header of headers) {
-					values[header] = "";
-				}
-				return values;
-			});
-		const renderMarkdownToHtml = rendererFallbacks?.renderMarkdownToHtml
-			?? ((/** @type {string} */ source) => source
-				.replace(/&/g, "&amp;")
-				.replace(/</g, "&lt;")
-				.replace(/>/g, "&gt;")
-				.replace(/\"/g, "&quot;")
-				.replace(/'/g, "&#39;")
-				.replace(/\n/g, "<br>"));
-		const resolveEntryByName = rendererFallbacks?.makeEntryByNameResolver(deps.getCurrentData, deps.resolveEntryName)
-			?? (() => null);
+		if (typeof createRendererFallbacks !== "function") {
+			throw new Error("[mito] renderer-fallbacks.js が読み込まれていません");
+		}
+		const shared = createRendererFallbacks();
+		const resolveCalendarSchema = shared.resolveCalendarSchema;
+		const resolveTimelineValues = shared.resolveTimelineValues;
+		const renderMarkdownToHtml = shared.renderMarkdownToHtml;
+		const resolveEntryByName = shared.makeEntryByNameResolver(deps.getCurrentData, deps.resolveEntryName);
+		const cssEscape = shared.cssEscape;
 
 		const linkPreviewHandler = typeof createLinkPreviewHandler === "function"
 			? createLinkPreviewHandler({
@@ -113,10 +102,6 @@
 						return;
 					}
 
-					if (!currentData.settings || typeof currentData.settings !== "object") {
-						currentData.settings = {};
-					}
-
 					const nextFocusCategories = new Set(resolveFocusCategories(currentData, Array.isArray(currentData.active) ? currentData.active : []));
 					if (nextFocusCategories.has(category)) {
 						nextFocusCategories.delete(category);
@@ -127,9 +112,18 @@
 						nextFocusCategories.add(category);
 					}
 
-					currentData.settings.focusCategory = Array.from(nextFocusCategories).join(", ");
-					document.dispatchEvent(new CustomEvent("mito:data-changed"));
-					renderDashboardOverview(mainElement, currentData);
+					const applied = deps.mutateDocument((documentData) => {
+						if (!documentData.settings || typeof documentData.settings !== "object") {
+							documentData.settings = {};
+						}
+
+						documentData.settings.focusCategory = Array.from(nextFocusCategories).join(", ");
+					});
+					if (!applied) {
+						return;
+					}
+
+					renderDashboardOverview(mainElement, deps.getCurrentData());
 				});
 
 				focusChipList.appendChild(button);
@@ -157,11 +151,13 @@
 				return;
 			}
 
+			// 行の索引は全カテゴリ列で共有できるため、描画ごとに1度だけ作る
+			const calendarRowIndex = buildCalendarRowIndex(schema);
 			const categoryColumns = focusCategories.map((category) => {
 				const categoryEntries = targetEntries.filter((/** @type {any} */ entry) => String(entry?.category ?? "").trim() === category);
 				return {
 					category,
-					rowEntryMap: buildRowEntryMap(schema, categoryEntries),
+					rowEntryMap: buildRowEntryMap(schema, calendarRowIndex, categoryEntries),
 				};
 			});
 
@@ -187,7 +183,7 @@
 			restoreTableScrollPosition(tableWrap);
 			const editingId = deps.getEditingEntryId();
 			if (editingId != null) {
-				const editingCard = /** @type {HTMLElement | null} */ (tableWrap.querySelector(`.dashboard-entry-card[data-entry-id="${editingId}"]`));
+				const editingCard = /** @type {HTMLElement | null} */ (tableWrap.querySelector(`.dashboard-entry-card[data-entry-id="${cssEscape(String(editingId))}"]`));
 				editingCard?.classList.add("is-editing");
 			}
 		}
@@ -385,7 +381,8 @@
 
 			if (typeof entry?.description === "string" && entry.description.trim().length > 0) {
 				const description = document.createElement("div");
-				description.className = "dashboard-entry-card-description";
+				// md-body: Markdown本文の共通スタイル（styles/markdown.css）
+				description.className = "dashboard-entry-card-description md-body";
 				const preview = buildDashboardDescriptionPreview(entry.description);
 				description.innerHTML = renderMarkdownToHtml(preview.source);
 				if (preview.truncated) {
@@ -586,14 +583,15 @@
 
 		/**
 		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
+		 * @param {Map<string, Map<string, number[]>>} calendarRowIndex
 		 * @param {any[]} entries
 		 * @returns {Map<number, any[]>}
 		 */
-		function buildRowEntryMap(schema, entries) {
+		function buildRowEntryMap(schema, calendarRowIndex, entries) {
 			/** @type {Map<number, any[]>} */
 			const rowMap = new Map();
 			for (const entry of entries) {
-				const rowIndex = findCalendarRowIndexForEntry(schema, entry);
+				const rowIndex = findCalendarRowIndexForEntry(schema, calendarRowIndex, entry);
 				if (rowIndex < 0) {
 					continue;
 				}
@@ -707,57 +705,87 @@
 		}
 
 		/**
+		 * 「ヘッダー名 → セル値 → その値を持つ行番号」の索引を作る。
+		 *
+		 * 索引を使わずエントリーごとに全行を走査すると、計算量が
+		 * エントリー数 × 行数 × 列数 になる。実データのカレンダーは数千行あり、
+		 * かつ入力1文字ごとに再描画が走るため、ここは索引化が必須。
+		 *
 		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
+		 * @returns {Map<string, Map<string, number[]>>}
+		 */
+		function buildCalendarRowIndex(schema) {
+			/** @type {Map<string, Map<string, number[]>>} */
+			const index = new Map();
+			if (!Array.isArray(schema.headers) || !Array.isArray(schema.rows)) {
+				return index;
+			}
+
+			for (const header of schema.headers) {
+				/** @type {Map<string, number[]>} */
+				const rowsByValue = new Map();
+				for (let rowIndex = 0; rowIndex < schema.rows.length; rowIndex += 1) {
+					const value = String(schema.rows[rowIndex]?.[header] ?? "").trim();
+					if (value.length === 0) {
+						continue;
+					}
+
+					const bucket = rowsByValue.get(value);
+					if (bucket) {
+						bucket.push(rowIndex);
+					} else {
+						rowsByValue.set(value, [rowIndex]);
+					}
+				}
+				index.set(header, rowsByValue);
+			}
+
+			return index;
+		}
+
+		/**
+		 * エントリーの日付値に最も多くの列で一致するカレンダー行を探す。
+		 * 一致数が同じ場合は行番号の小さい方を採用する（従来の走査順と同じ結果）。
+		 * @param {{ headers: string[], rows: Record<string, string>[] }} schema
+		 * @param {Map<string, Map<string, number[]>>} calendarRowIndex
 		 * @param {any} entry
 		 * @returns {number}
 		 */
-		function findCalendarRowIndexForEntry(schema, entry) {
+		function findCalendarRowIndexForEntry(schema, calendarRowIndex, entry) {
 			if (!Array.isArray(schema.headers) || schema.headers.length === 0 || !Array.isArray(schema.rows)) {
 				return -1;
 			}
 
 			const timelineValues = resolveTimelineValues(entry, "date", schema.headers);
+
+			/** @type {Map<number, number>} 行番号 → 一致した列数 */
+			const matchCounts = new Map();
+			for (const header of schema.headers) {
+				const entryValue = String(timelineValues[header] ?? "").trim();
+				if (entryValue.length === 0) {
+					continue;
+				}
+
+				const candidateRows = calendarRowIndex.get(header)?.get(entryValue);
+				if (!candidateRows) {
+					continue;
+				}
+
+				for (const candidateRow of candidateRows) {
+					matchCounts.set(candidateRow, (matchCounts.get(candidateRow) ?? 0) + 1);
+				}
+			}
+
 			let bestIndex = -1;
 			let bestScore = 0;
-
-			for (let rowIndex = 0; rowIndex < schema.rows.length; rowIndex += 1) {
-				const row = schema.rows[rowIndex];
-				let score = 0;
-				for (const header of schema.headers) {
-					const rowValue = String(row?.[header] ?? "").trim();
-					const entryValue = String(timelineValues[header] ?? "").trim();
-					if (rowValue.length === 0 || entryValue.length === 0) {
-						continue;
-					}
-					if (rowValue === entryValue) {
-						score += 1;
-					}
-				}
-
-				if (score > bestScore) {
+			for (const [candidateRow, score] of matchCounts) {
+				if (score > bestScore || (score === bestScore && candidateRow < bestIndex)) {
 					bestScore = score;
-					bestIndex = rowIndex;
+					bestIndex = candidateRow;
 				}
 			}
 
-			if (bestIndex >= 0) {
-				return bestIndex;
-			}
-
-			const firstHeader = schema.headers[0];
-			const primaryValue = String(timelineValues[firstHeader] ?? "").trim();
-			if (!primaryValue) {
-				return -1;
-			}
-
-			for (let rowIndex = 0; rowIndex < schema.rows.length; rowIndex += 1) {
-				const row = schema.rows[rowIndex];
-				if (String(row?.[firstHeader] ?? "").trim() === primaryValue) {
-					return rowIndex;
-				}
-			}
-
-			return -1;
+			return bestIndex;
 		}
 
 		return {

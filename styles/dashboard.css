@@ -246,11 +246,17 @@
 }
 
 .dashboard-entry-card-description {
+	/* カードは面積が狭いので、見出しの階層差をほぼ付けずに詰める */
+	--md-block-gap: 0.3rem;
+	--md-h1-size: 1.02em;
+	--md-h2-size: 1em;
+	--md-h3-size: 0.98em;
+	--md-h4-size: 0.95em;
+
 	font-size: 0.82rem;
 	line-height: 1.45;
 	color: var(--muted);
 	white-space: normal;
-	word-break: break-word;
 }
 
 .dashboard-entry-card-description h1,
@@ -260,91 +266,6 @@
 .dashboard-entry-card-description h5,
 .dashboard-entry-card-description h6 {
 	line-height: 1.3;
-	font-weight: 700;
-	color: var(--fg);
-}
-
-.dashboard-entry-card-description h1 {
-	font-size: 0.84rem;
-}
-
-.dashboard-entry-card-description h2 {
-	font-size: 0.82rem;
-}
-
-.dashboard-entry-card-description h3 {
-	font-size: 0.8rem;
-}
-
-.dashboard-entry-card-description h4,
-.dashboard-entry-card-description h5,
-.dashboard-entry-card-description h6 {
-	font-size: 0.78rem;
-}
-
-.dashboard-entry-card-description p,
-.dashboard-entry-card-description ul,
-.dashboard-entry-card-description ol,
-.dashboard-entry-card-description pre,
-.dashboard-entry-card-description blockquote,
-.dashboard-entry-card-description h1,
-.dashboard-entry-card-description h2,
-.dashboard-entry-card-description h3,
-.dashboard-entry-card-description h4,
-.dashboard-entry-card-description h5,
-.dashboard-entry-card-description h6 {
-	margin: 0;
-}
-
-.dashboard-entry-card-description p + p,
-.dashboard-entry-card-description p + ul,
-.dashboard-entry-card-description p + ol,
-.dashboard-entry-card-description ul + p,
-.dashboard-entry-card-description ol + p,
-.dashboard-entry-card-description pre + p,
-.dashboard-entry-card-description p + pre,
-.dashboard-entry-card-description h1 + p,
-.dashboard-entry-card-description h2 + p,
-.dashboard-entry-card-description h3 + p {
-	margin-top: 0.3rem;
-}
-
-.dashboard-entry-card-description ul {
-	padding-left: 1.1rem;
-}
-
-.dashboard-entry-card-description ol {
-	padding-left: 1.25rem;
-}
-
-.dashboard-entry-card-description blockquote {
-	padding-left: 0.55rem;
-	border-left: 3px solid var(--blockquote-border);
-	color: var(--muted);
-}
-
-.dashboard-entry-card-description a {
-	color: var(--accent);
-	text-decoration: underline;
-	text-underline-offset: 0.12em;
-}
-
-.dashboard-entry-card-description a:hover {
-	color: var(--accent-2);
-}
-
-.dashboard-entry-card-description code {
-	font-size: 0.78rem;
-	background: var(--code-bg);
-	padding: 0.05rem 0.24rem;
-	border-radius: 4px;
-}
-
-.dashboard-entry-card-description pre {
-	padding: 0.28rem 0.4rem;
-	border-radius: 6px;
-	background: var(--code-bg);
-	overflow-x: auto;
 }
 
 .dashboard-entry-card-truncation {

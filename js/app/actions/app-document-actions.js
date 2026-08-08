@@ -2,6 +2,21 @@
 
 (function registerAppDocumentActions(globalObject) {
 	/**
+	 * 現在時刻をJSTのISO文字列で返す。
+	 * スクリプトの読み込み順に依存しないよう、参照は呼び出し時まで遅延させる。
+	 * @returns {string}
+	 */
+	function nowJST() {
+		const resolved = /** @type {any} */ (window).nowJST;
+		if (typeof resolved !== "function") {
+			console.error("Data model module is not available");
+			return new Date().toISOString();
+		}
+
+		return resolved();
+	}
+
+	/**
 	 * @param {{
 	 *   renderOutlineFromData: (data: any) => void,
 	 *   setFormModeAdd: () => void,
@@ -12,8 +27,6 @@
 	 *   renderFileLoadError: (message: string) => void
 	 * }} deps
 	 */
-	const nowJST = /** @type {any} */ (window).nowJST;
-
 	function createAppDocumentActions(deps) {
 		/**
 		 * @param {any} parsed
@@ -30,8 +43,9 @@
 				: "プロジェクト";
 			const normalizedSettings = normalizeSettings(root.settings);
 			const normalizedCalendar = normalizeCalendar(root.calendar);
-			const normalizedActive = normalizeEntryArray(root.active, false);
-			const normalizedDeleted = normalizeEntryArray(root.deleted, true);
+			const calendarHeaders = resolveCalendarHeaders(normalizedCalendar);
+			const normalizedActive = normalizeEntryArray(root.active, false, calendarHeaders);
+			const normalizedDeleted = normalizeEntryArray(root.deleted, true, calendarHeaders);
 
 			return {
 				project: normalizedProject,
@@ -87,26 +101,41 @@
 		}
 
 		/**
+		 * カレンダーCSVの先頭行からヘッダー名を取り出す。
+		 * 旧スキーマ（`from`）を `dateCalendar` へ移行する際の列名決定に使う。
+		 * @param {null | { csvText: string }} calendar
+		 * @returns {string[]}
+		 */
+		function resolveCalendarHeaders(calendar) {
+			if (!calendar) {
+				return [];
+			}
+
+			const createCalendarUtils = /** @type {any} */ (window).createCalendarUtils;
+			if (typeof createCalendarUtils !== "function") {
+				return [];
+			}
+
+			const schema = createCalendarUtils().resolveCalendarSchema({ calendar });
+			return Array.isArray(schema?.headers) ? schema.headers : [];
+		}
+
+		/**
 		 * @param {any} list
 		 * @param {boolean} allowEmpty
+		 * @param {string[]} calendarHeaders
 		 * @returns {any[]}
 		 */
-		function normalizeEntryArray(list, allowEmpty) {
+		function normalizeEntryArray(list, allowEmpty, calendarHeaders) {
 			const source = Array.isArray(list) ? list : [];
 			const normalized = source
 				.filter((item) => item && typeof item === "object")
-				.map((item, index) => normalizeEntry(item, index + 1));
+				.map((item, index) => normalizeEntry(item, index + 1, calendarHeaders));
 
 			if (normalized.length === 0 && !allowEmpty) {
-				return [
-					{
-						id: 1,
-						category: "出来事",
-						name: "新規エントリ",
-						description: "",
-						timeline: {},
-					},
-				];
+				// 他の経路と同じ形（dateCalendar / dashboardOrder を持つ）に揃えるため
+				// normalizeEntry を通す。
+				return [normalizeEntry({ category: "出来事", name: "新規エントリ", dateCalendar: {} }, 1, calendarHeaders)];
 			}
 
 			return normalized;
@@ -115,9 +144,10 @@
 		/**
 		 * @param {any} entry
 		 * @param {number} fallbackId
+		 * @param {string[]} calendarHeaders
 		 * @returns {any}
 		 */
-		function normalizeEntry(entry, fallbackId) {
+		function normalizeEntry(entry, fallbackId, calendarHeaders) {
 			const rawId = Number.parseInt(String(entry?.id ?? ""), 10);
 			const normalizedId = Number.isFinite(rawId) && rawId > 0 ? rawId : fallbackId;
 			const normalizedCategory = typeof entry?.category === "string" && entry.category.trim().length > 0
@@ -128,13 +158,47 @@
 				: `項目${normalizedId}`;
 
 			return {
-				...entry,
+				...migrateLegacyFromField(entry, calendarHeaders),
 				id: normalizedId,
 				category: normalizedCategory,
 				name: normalizedName,
 				dashboardOrder: normalizeDashboardOrder(entry?.dashboardOrder),
 				description: typeof entry?.description === "string" ? entry.description : "",
 			};
+		}
+
+		/**
+		 * 旧スキーマの `from`（カレンダー導入前の単一日付フィールド）を
+		 * `dateCalendar` の先頭列へ移し、`from` を落とす。
+		 *
+		 * 読み込み時に一度だけ変換することで、描画やフォームの側に
+		 * 旧フィールドを知っている分岐を残さずに済む。
+		 * カレンダー未設定（列名が決まらない）場合は、値を失わないよう
+		 * `from` をそのまま残す。この場合そもそも日付UIは表示されない。
+		 *
+		 * @param {any} entry
+		 * @param {string[]} calendarHeaders
+		 * @returns {any}
+		 */
+		function migrateLegacyFromField(entry, calendarHeaders) {
+			const primaryHeader = calendarHeaders[0] ?? "";
+			const legacyFrom = typeof entry?.from === "string" ? entry.from.trim() : "";
+			if (!primaryHeader || legacyFrom.length === 0) {
+				return entry;
+			}
+
+			const existing = entry.dateCalendar && typeof entry.dateCalendar === "object" && !Array.isArray(entry.dateCalendar)
+				? entry.dateCalendar
+				: {};
+			const currentPrimary = typeof existing[primaryHeader] === "string" ? existing[primaryHeader].trim() : "";
+
+			const migrated = { ...entry, dateCalendar: { ...existing } };
+			// 既に先頭列に値があるなら、そちらを正とする（fromは捨てる）
+			if (currentPrimary.length === 0) {
+				migrated.dateCalendar[primaryHeader] = legacyFrom;
+			}
+			delete migrated.from;
+			return migrated;
 		}
 
 		/**
@@ -149,18 +213,23 @@
 		/**
 		 * トップバーの「開く」から選択されたJSONファイルを処理する。
 		 * @param {File} file
+		 * @param {any | null} [fileHandle] showOpenFilePicker で得たハンドル。未対応環境ではnull
 		 * @returns {Promise<boolean>}
 		 */
-		async function handleOpenFile(file) {
+		async function handleOpenFile(file, fileHandle) {
 			try {
 				const text = await file.text();
 				const parsed = JSON.parse(text);
 				const normalized = normalizeDocument(parsed);
-				deps.setCurrentFileName(file.name || "data.json");
-				deps.setCurrentFileHandle(null);
+				const fileName = file.name || "data.json";
+				deps.setCurrentFileName(fileName);
+				// ハンドルを保持できた場合、以降の保存は保存先を聞かずに上書きできる
+				deps.setCurrentFileHandle(fileHandle ?? null);
 				deps.renderOutlineFromData(normalized);
-				deps.setFormStatus(`読み込み完了: ${file.name || "data.json"}`);
-				deps.setTopbarSaveStatus(`読み込み: ${file.name || "data.json"}`);
+				deps.setFormStatus(fileHandle
+					? `読み込み完了: ${fileName}（保存で上書きします）`
+					: `読み込み完了: ${fileName}`);
+				deps.setTopbarSaveStatus(`読み込み: ${fileName}`);
 				return true;
 			} catch (error) {
 				console.error("Failed to load selected JSON", error);
@@ -217,6 +286,7 @@
 		return {
 			handleOpenFile,
 			handleNewFile,
+			normalizeDocument,
 		};
 	}
 

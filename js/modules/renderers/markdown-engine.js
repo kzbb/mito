@@ -19,6 +19,14 @@
 		}
 
 		/**
+		 * インラインコードを一時退避させるためのプレースホルダ。
+		 * 本文に同じ文字列を書かれると復元時に化けるため、識別子をランダム化する。
+		 * 英数字のみなので、そのまま正規表現に埋め込んでも安全。
+		 */
+		const CODE_TOKEN_ID = Math.random().toString(36).slice(2, 12);
+		const CODE_TOKEN_PATTERN = new RegExp(`__MITO_CODE_${CODE_TOKEN_ID}_(\\d+)__`, "g");
+
+		/**
 		 * @param {string} source
 		 * @returns {string}
 		 */
@@ -28,7 +36,7 @@
 			/** @type {string[]} */
 			const codeTokens = [];
 			value = value.replace(/`([^`]+)`/g, (_full, codeText) => {
-				const token = `__MITO_CODE_${codeTokens.length}__`;
+				const token = `__MITO_CODE_${CODE_TOKEN_ID}_${codeTokens.length}__`;
 				codeTokens.push(`<code>${codeText}</code>`);
 				return token;
 			});
@@ -66,7 +74,7 @@
 
 			value = value.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 			value = value.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-			value = value.replace(/__MITO_CODE_(\d+)__/g, (_full, indexText) => {
+			value = value.replace(CODE_TOKEN_PATTERN, (_full, indexText) => {
 				const index = Number.parseInt(indexText, 10);
 				return codeTokens[index] ?? "";
 			});

@@ -9,59 +9,6 @@
 	line-height: 1.5;
 }
 
-.entry-description h1,
-.entry-description h2,
-.entry-description h3,
-.entry-description h4,
-.entry-description h5,
-.entry-description h6 {
-	margin: 0;
-	line-height: 1.35;
-	font-weight: 700;
-	color: var(--fg);
-}
-
-.entry-description h1 {
-	font-size: 1.25rem;
-}
-
-.entry-description h2 {
-	font-size: 1.12rem;
-}
-
-.entry-description h3 {
-	font-size: 1.02rem;
-}
-
-.entry-description h4,
-.entry-description h5,
-.entry-description h6 {
-	font-size: 0.94rem;
-}
-
-.entry-description p,
-.entry-description ul,
-.entry-description ol,
-.entry-description pre,
-.entry-description blockquote {
-	margin: 0;
-}
-
-.entry-description h1 + p,
-.entry-description h2 + p,
-.entry-description h3 + p,
-.entry-description p + p,
-.entry-description p + ul,
-.entry-description p + ol,
-.entry-description ul + p,
-.entry-description ol + p,
-.entry-description p + pre,
-.entry-description pre + p,
-.entry-description blockquote + p,
-.entry-description p + blockquote {
-	margin-top: 0.36rem;
-}
-
 .entry-wiki-description-input {
 	min-height: 84px;
 	padding: 8px 10px;
