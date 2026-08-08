@@ -201,6 +201,24 @@ function extractFunction(relativePath, name) {
 	}
 }
 
+// -------------------------------------- ツリーの年表順ソート
+{
+	loadModule("js/modules/renderers/calendar-utils.js");
+	const model = loadModule("js/modules/data/data-model.js").createDataModel();
+	const grouped = model.groupActiveEntriesByCategory({
+		calendar: { csvText: "年\n1900\n1910\n1920\n" },
+		active: [
+			{ id: 4, category: "人物", name: "日付なし" },
+			{ id: 3, category: "人物", name: "同年後", dashboardOrder: 2, dateCalendar: { 年: "1910" } },
+			{ id: 2, category: "人物", name: "後年", dashboardOrder: 0, dateCalendar: { 年: "1920" } },
+			{ id: 1, category: "人物", name: "同年前", dashboardOrder: 1, dateCalendar: { 年: "1910" } },
+		],
+	});
+	equal("groupActiveEntriesByCategory: 年表位置とセル内表示順に揃える",
+		grouped.get("人物").map((entry) => entry.name),
+		["同年前", "同年後", "後年", "日付なし"]);
+}
+
 // -------------------------------------------------------- Markdown
 {
 	const w = loadModule("js/modules/renderers/markdown-engine.js");

@@ -34,6 +34,24 @@
 	background: var(--bg);
 }
 
+.left-panel-toggle {
+	width: 28px;
+	padding: 0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.8rem;
+	line-height: 1;
+}
+
+.columns.is-left-panel-collapsed {
+	grid-template-columns: 0 0 minmax(0, 1fr);
+}
+
+.columns.is-left-panel-collapsed .left-window,
+.columns.is-left-panel-collapsed .splitter-left {
+	visibility: hidden;
+	pointer-events: none;
+}
+
 .app-title {
 	margin: 0;
 	font-size: 0.95rem;

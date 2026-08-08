@@ -185,9 +185,9 @@
 		 * @param {HTMLElement} mainElement
 		 * @param {any} data
 		 */
-		function renderDashboardOverview(mainElement, data) {
+		function renderDashboardOverview(mainElement, data, options) {
 			if (dashboardApi && typeof dashboardApi.renderDashboardOverview === "function") {
-				dashboardApi.renderDashboardOverview(mainElement, data);
+				dashboardApi.renderDashboardOverview(mainElement, data, options);
 				return;
 			}
 

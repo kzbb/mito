@@ -102,6 +102,21 @@
 			callForm("enterEditMode", entry);
 		}
 
+		/** 選択カードを削除済みへ移動する。 */
+		function moveEntryToDeleted(entryId) {
+			const currentData = deps.getCurrentData();
+			if (!currentData) return null;
+			const targetIndex = callModel("findActiveEntryIndexById", currentData, entryId) ?? -1;
+			if (targetIndex < 0) return null;
+			if (!Array.isArray(currentData.deleted)) currentData.deleted = [];
+			const [deletedEntry] = currentData.active.splice(targetIndex, 1);
+			if (!deletedEntry) return null;
+			currentData.deleted.unshift(deletedEntry);
+			deps.setEditingEntryId(null);
+			deps.renderOutlineFromData(currentData);
+			return deletedEntry;
+		}
+
 		/**
 		 * @param {string} filePath
 		 * @returns {boolean}
@@ -298,12 +313,13 @@
 				selectTreeLeaf: (treeElement, button) => callTree("selectTreeLeaf", treeElement, button),
 				clearTreeSelection: (treeElement) => callTree("clearTreeSelection", treeElement),
 				setTreeMessage: (treeElement, message) => callTree("setTreeMessage", treeElement, message),
-				renderDashboardOverview: (mainElement, data) => callRenderer("renderDashboardOverview", mainElement, data),
+				renderDashboardOverview: (mainElement, data, options) => callRenderer("renderDashboardOverview", mainElement, data, options),
 				renderSettingsButton: (data, onSelect) => callRenderer("renderSettingsButton", data, onSelect) ?? null,
 				renderSettingsOverview: (mainElement, data) => callRenderer("renderSettingsOverview", mainElement, data),
 				renderMainMessage: (mainElement, message) => callRenderer("renderMainMessage", mainElement, message),
 				renderEntryDetail,
 				setFormModeAdd: () => callForm("setFormModeAdd"),
+				enterEditMode: (entry) => callForm("enterEditMode", entry),
 				setCurrentData: deps.setCurrentData,
 			}));
 		}
@@ -351,12 +367,14 @@
 				},
 				onOpenEntryView: (/** @type {any} */ entry) => {
 					const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
-					if (!mainElement) {
+					const currentData = deps.getCurrentData();
+					if (!mainElement || !currentData) {
 						return;
 					}
 
 					callTree("focusNewEntryInTree", entry);
-					renderEntryDetail(mainElement, entry);
+					callRenderer("renderDashboardOverview", mainElement, currentData);
+					callForm("enterEditMode", entry);
 				},
 				onOpenFileLink: async (/** @type {string} */ filePath) => {
 					const normalizedPath = filePath.trim();
@@ -462,35 +480,7 @@
 
 					return updatedEntry;
 				},
-				onMoveEntryToDeletedFromDetail: (/** @type {any} */ entry) => {
-					const currentData = deps.getCurrentData();
-					if (!currentData) {
-						return null;
-					}
-
-					const entryId = String(entry?.id ?? "");
-					const targetIndex = callModel("findActiveEntryIndexById", currentData, entryId) ?? -1;
-					if (targetIndex < 0) {
-						return null;
-					}
-
-					if (!Array.isArray(currentData.deleted)) {
-						currentData.deleted = [];
-					}
-
-					const [deletedEntry] = currentData.active.splice(targetIndex, 1);
-					if (!deletedEntry) {
-						return null;
-					}
-
-					currentData.deleted.unshift(deletedEntry);
-					if (deps.getEditingEntryId() === entryId) {
-						deps.setEditingEntryId(null);
-					}
-
-					deps.renderOutlineFromData(currentData);
-					return deletedEntry;
-				},
+				onMoveEntryToDeletedFromDetail: (/** @type {any} */ entry) => moveEntryToDeleted(String(entry?.id ?? "")),
 				onPermanentlyDeleteDeletedEntry: (/** @type {any} */ entry) => {
 					const currentData = deps.getCurrentData();
 					if (!currentData || !Array.isArray(currentData.deleted)) {
@@ -603,6 +593,7 @@
 				renderEntryDetail: (/** @type {HTMLElement} */ mainElement, /** @type {any} */ entry) => {
 					renderEntryDetail(mainElement, entry);
 				},
+				moveEntryToDeleted,
 			}));
 		}
 

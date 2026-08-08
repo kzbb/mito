@@ -50,6 +50,16 @@
 	display: inline-flex;
 }
 
+.entry-delete-button {
+	color: #a12b2b;
+	border-color: #c98787;
+}
+
+.entry-delete-button:hover,
+.entry-delete-button:focus-visible {
+	background: #fff0f0;
+}
+
 .form-grid-2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;

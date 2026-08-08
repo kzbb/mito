@@ -47,8 +47,9 @@
 		/**
 		 * @param {HTMLElement} mainElement
 		 * @param {any} data
+		 * @param {{ ensureCategory?: string }} [options]
 		 */
-		function renderDashboardOverview(mainElement, data) {
+		function renderDashboardOverview(mainElement, data, options) {
 			for (const card of mainElement.querySelectorAll(".dashboard-entry-card")) {
 				if (card instanceof HTMLElement) {
 					card.blur();
@@ -69,6 +70,10 @@
 
 			const activeEntries = Array.isArray(data?.active) ? data.active : [];
 			const focusCategories = resolveFocusCategories(data, activeEntries);
+			const ensuredCategory = String(options?.ensureCategory ?? "").trim();
+			if (ensuredCategory && !focusCategories.includes(ensuredCategory)) {
+				focusCategories.push(ensuredCategory);
+			}
 			const targetEntries = activeEntries.filter((/** @type {any} */ entry) => {
 				const category = typeof entry?.category === "string" ? entry.category.trim() : "";
 				return focusCategories.includes(category);
@@ -363,7 +368,7 @@
 			card.dataset.entryId = String(entry?.id ?? "");
 			card.tabIndex = 0;
 			card.setAttribute("role", "button");
-			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集、ダブルクリックで個別表示）`);
+			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集）`);
 
 			const cardColor = resolveEntryCardColor(entry);
 			if (cardColor) {
@@ -441,16 +446,6 @@
 					return;
 				}
 				// mousedownで処理済みのため何もしない
-			});
-
-			card.addEventListener("dblclick", (event) => {
-				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
-				if (target?.closest("a")) {
-					return;
-				}
-
-				event.preventDefault();
-				deps.onOpenEntryView(entry);
 			});
 
 			card.addEventListener("keydown", (event) => {

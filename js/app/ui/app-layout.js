@@ -5,8 +5,31 @@
 	 * カラム幅と左パネルの上下高さを変えるスプリッターのドラッグ操作を有効にする。
 	 */
 	function setupLayoutResizers() {
+		setupLeftPanelToggle();
 		enableColumnResize();
 		enableLeftPaneResize();
+	}
+
+	/** 左パネルの表示・非表示を切り替える。 */
+	function setupLeftPanelToggle() {
+		const columns = /** @type {HTMLElement | null} */ (document.querySelector(".columns"));
+		const panel = /** @type {HTMLElement | null} */ (document.getElementById("left-panel"));
+		const button = /** @type {HTMLButtonElement | null} */ (document.getElementById("toggle-left-panel"));
+		if (!columns || !panel || !button) return;
+
+		const applyState = (collapsed) => {
+			columns.classList.toggle("is-left-panel-collapsed", collapsed);
+			panel.setAttribute("aria-hidden", String(collapsed));
+			button.setAttribute("aria-expanded", String(!collapsed));
+			const label = collapsed ? "左パネルを開く" : "左パネルを閉じる";
+			button.textContent = collapsed ? "▷│" : "◁│";
+			button.setAttribute("aria-label", label);
+			button.title = label;
+		};
+
+		button.addEventListener("click", () => {
+			applyState(!columns.classList.contains("is-left-panel-collapsed"));
+		});
 	}
 
 	/**

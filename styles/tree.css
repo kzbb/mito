@@ -75,6 +75,14 @@
 	color: var(--accent-2);
 }
 
+.tree-entry-date-unset {
+	display: inline-block;
+	margin-right: 3px;
+	color: #8a5a13;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
 .tree-leaf::before {
 	content: "";
 	position: absolute;

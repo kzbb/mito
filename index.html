@@ -10,6 +10,7 @@
     <div class="app-layout">
         <header class="topbar">
             <h1 class="app-title"><a href="https://bblab.org/mito/" target="_blank" rel="noopener noreferrer">MITO</a></h1>
+            <button id="toggle-left-panel" class="left-panel-toggle" type="button" aria-controls="left-panel" aria-expanded="true" aria-label="左パネルを閉じる" title="左パネルを閉じる">◁│</button>
             <button id="new-file">新規作成</button>
             <button id="open-file">開く</button>
             <button id="save-file">保存</button>
@@ -19,7 +20,7 @@
         </header>
 
         <section class="columns" aria-label="Two column layout">
-            <aside class="left-window" aria-label="Left panel">
+            <aside class="left-window" id="left-panel" aria-label="Left panel">
                 <section class="left-pane top-pane" aria-label="Outline panel">
                     <div class="outline-header">
                         <div class="outline-scope" id="outline-scope">未選択</div>
@@ -38,6 +39,7 @@
                         <div class="form-actions form-actions-inline">
                             <button type="submit" id="preview-entry" form="entry-form">新規カード</button>
                             <button type="reset" id="start-new-entry" form="entry-form">新規カード</button>
+                            <button type="button" id="delete-entry" class="entry-delete-button" hidden>削除</button>
                         </div>
                     </div>
                     <form id="entry-form" class="entry-form">

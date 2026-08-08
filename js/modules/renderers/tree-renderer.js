@@ -74,7 +74,19 @@
 					leafButton.className = "tree-leaf tree-leaf-button";
 					leafButton.dataset.entryId = String(entry?.id ?? "");
 					leafButton.dataset.category = category;
-					leafButton.textContent = deps.resolveEntryName(entry);
+					const entryName = deps.resolveEntryName(entry);
+					if (isEntryDateUnset(entry)) {
+						const unsetBadge = document.createElement("span");
+						unsetBadge.className = "tree-entry-date-unset";
+						unsetBadge.textContent = "＊";
+						unsetBadge.title = "この項目には日付が設定されていません";
+						unsetBadge.setAttribute("aria-hidden", "true");
+						leafButton.appendChild(unsetBadge);
+						leafButton.appendChild(document.createTextNode(entryName));
+						leafButton.setAttribute("aria-label", `${entryName}（日付未設定）`);
+					} else {
+						leafButton.textContent = entryName;
+					}
 					leafButton.addEventListener("click", () => {
 						onEntrySelect(entry, leafButton);
 					});
@@ -91,6 +103,20 @@
 			}
 
 			return firstSelection;
+		}
+
+		/**
+		 * @param {any} entry
+		 * @returns {boolean}
+		 */
+		function isEntryDateUnset(entry) {
+			const dateValues = entry?.dateCalendar;
+			if (dateValues && typeof dateValues === "object" && !Array.isArray(dateValues)) {
+				return !Object.values(dateValues).some((value) => String(value ?? "").trim().length > 0);
+			}
+
+			// カレンダー導入前のデータも、旧日付値があれば設定済みとして扱う。
+			return String(entry?.from ?? "").trim().length === 0;
 		}
 
 		/**

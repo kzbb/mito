@@ -14,7 +14,8 @@
 	 *   renderOutlineFromData: (data: any) => void,
 	 *   renderDashboardOverview: (mainElement: HTMLElement, data: any) => void,
 	 *   focusNewEntryInTree: (entry: any) => void,
-	 *   renderEntryDetail: (mainElement: HTMLElement, entry: any) => void
+	 *   renderEntryDetail: (mainElement: HTMLElement, entry: any) => void,
+	 *   moveEntryToDeleted: (entryId: string) => any | null
 	 * }} deps
 	 */
 	function createEntryFormModule(deps) {
@@ -49,14 +50,16 @@
 			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
 			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
+			const deleteButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("delete-entry"));
 
-			if (!formElement || !mainElement || !submitButton || !resetButton) {
+			if (!formElement || !mainElement || !submitButton || !resetButton || !deleteButton) {
 				return;
 			}
 
 			syncDateInputs = setupTimelineFields(formElement);
 			syncDateInputs(null);
 			resetButton.hidden = true;
+			deleteButton.hidden = true;
 			ensureEditingStatusBadge(formElement);
 
 			// データ変更イベント発火時、編集中エントリの日付フィールドを最新状態に同期する
@@ -199,6 +202,17 @@
 				});
 				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「新規カード」を押してください。");
 			});
+
+			deleteButton.addEventListener("click", () => {
+				const editingEntryId = deps.getEditingEntryId();
+				if (!editingEntryId || !deps.moveEntryToDeleted(editingEntryId)) {
+					deps.setFormStatus("削除済みへの移動に失敗しました。");
+					return;
+				}
+
+				setFormModeAdd();
+				deps.setFormStatus("カードを削除済みへ移動しました。");
+			});
 		}
 
 		/**
@@ -256,10 +270,13 @@
 				return;
 			}
 
-			// カテゴリや名前が変わった場合はツリーも再描画が必要。それ以外は変更通知のみ発火する。
+			// カテゴリ・名前・年表位置が変わった場合はツリーも再描画が必要。
+			// ツリーは年表順で並ぶため、日付やセル内表示順の変更も即座に反映する。
 			// どちらの経路でも変更通知はちょうど1回に保つ（renderOutlineFromData が内部で発火する）。
 			const treeAffectingChange = nextEntry.category !== targetEntry.category
-				|| nextEntry.name !== targetEntry.name;
+				|| nextEntry.name !== targetEntry.name
+				|| nextEntry.dashboardOrder !== targetEntry.dashboardOrder
+				|| JSON.stringify(nextEntry.dateCalendar ?? {}) !== JSON.stringify(targetEntry.dateCalendar ?? {});
 
 			currentData.active[targetIndex] = nextEntry;
 
@@ -680,6 +697,7 @@
 			const formElement = /** @type {HTMLFormElement | null} */ (document.getElementById("entry-form"));
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
 			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
+			const deleteButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("delete-entry"));
 
 			if (!formElement || !submitButton || !resetButton) {
 				return;
@@ -698,6 +716,10 @@
 
 			deps.setEditingEntryId(String(entry?.id ?? ""));
 			syncDashboardCardSelection(String(entry?.id ?? ""));
+			window.requestAnimationFrame(() => {
+				const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
+				if (mainElement) scrollToBalancedCardPosition(mainElement, entry);
+			});
 			categoryInput.value = typeof entry?.category === "string" ? entry.category : "";
 			nameInput.value = typeof entry?.name === "string" ? entry.name : "";
 			orderInput.value = Number.isFinite(Number(entry?.dashboardOrder))
@@ -712,6 +734,7 @@
 			submitButton.type = "button";
 			submitButton.hidden = true;
 			resetButton.hidden = false;
+			if (deleteButton) deleteButton.hidden = false;
 			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。次のカードを追加する場合は「新規カード」を押してください。");
 		}
 
@@ -747,6 +770,7 @@
 
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
 			const resetButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("start-new-entry"));
+			const deleteButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("delete-entry"));
 			if (submitButton) {
 				submitButton.textContent = "新規カード";
 				submitButton.type = "submit";
@@ -754,6 +778,9 @@
 			}
 			if (resetButton) {
 				resetButton.hidden = true;
+			}
+			if (deleteButton) {
+				deleteButton.hidden = true;
 			}
 
 		}

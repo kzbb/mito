@@ -63,6 +63,12 @@ function check(label, ok, detail) {
 	check("新規作成でダッシュボードが出る", await page.locator(".main-window h2").count() > 0,
 		await page.locator(".main-window h2").first().textContent());
 
+	// --- 左パネルの開閉 ---
+	await page.click("#toggle-left-panel");
+	check("左パネルを閉じられる", await page.locator(".columns.is-left-panel-collapsed").count() === 1);
+	await page.click("#toggle-left-panel");
+	check("左パネルを再表示できる", await page.locator(".columns.is-left-panel-collapsed").count() === 0);
+
 	const dirty = () => page.evaluate(() => ({ isDirty, status: document.getElementById("topbar-save-status").textContent }));
 
 	// --- showOpenFilePicker 経路: ハンドルを保持し、上書き保存できること ---
@@ -193,14 +199,13 @@ function check(label, ok, detail) {
 	check("設定変更がオートセーブされる", snap !== null && snap.project === "改名テスト", JSON.stringify(snap));
 
 	// ============ 完全削除 ============
-	// まずエントリを1件削除済みへ送る
-	await page.evaluate(() => {
-		const entry = currentData.active[0];
-		const main = document.querySelector(".main-window");
-		rendererApi.renderEntryDetail(main, entry);
-	});
+	// 入力欄でカードを編集状態にし、削除済みへ送る
+	await page.click('[data-role="dashboard"]');
+	await page.locator(".dashboard-entry-card").first().click();
 	await page.waitForTimeout(200);
-	await page.click(".entry-wiki-archive-button");
+	check("編集中は入力欄に削除ボタンが出る", await page.locator("#delete-entry:visible").count() === 1);
+	check("個別ページへ遷移しない", await page.locator(".entry-wiki").count() === 0);
+	await page.click("#delete-entry");
 	await page.waitForTimeout(300);
 	const deletedCount = await page.evaluate(() => currentData.deleted.length);
 	check("削除で deleted に移動する", deletedCount === 1, `${deletedCount}件`);

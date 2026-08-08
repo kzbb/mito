@@ -10,7 +10,7 @@
 	 *   captureOpenCategories: (treeElement: HTMLElement) => Set<string> | null,
 	 *   renderDashboardItem: (treeElement: HTMLElement, data: any, onSelect: (item: any, button: HTMLButtonElement) => void) => any,
 	 *   selectTreeLeaf: (treeElement: HTMLElement, button: HTMLButtonElement) => void,
-	 *   renderDashboardOverview: (mainElement: HTMLElement, data: any) => void,
+	 *   renderDashboardOverview: (mainElement: HTMLElement, data: any, options?: { ensureCategory?: string }) => void,
 	 *   renderCategoryTree: (treeElement: HTMLElement, grouped: Map<string, any[]>, onEntrySelect: (entry: any, button: HTMLButtonElement) => void, openCategories: Set<string> | null) => any,
 	 *   renderEntryDetail: (mainElement: HTMLElement, entry: any) => void,
 	 *   renderSettingsButton: (data: any, onSelect: (item: any) => void) => any,
@@ -20,6 +20,7 @@
 	 *   renderMainMessage: (mainElement: HTMLElement, message: string) => void,
 	 *   findActiveEntryById: (data: any, entryId: string | null) => any,
 	 *   setFormModeAdd: () => void,
+	 *   enterEditMode: (entry: any) => void,
 	 *   setCurrentData: (data: any) => void
 	 * }} deps
 	 */
@@ -126,7 +127,10 @@
 				deps.selectTreeLeaf(treeElement, button);
 				const entryId = String(entry?.id ?? "");
 				const latestEntry = entryId ? (deps.findActiveEntryById(data, entryId) ?? entry) : entry;
-				deps.renderEntryDetail(mainElement, latestEntry);
+				deps.renderDashboardOverview(mainElement, data, {
+					ensureCategory: typeof latestEntry?.category === "string" ? latestEntry.category : "",
+				});
+				deps.enterEditMode(latestEntry);
 			}, openCategories);
 			const settingsSelection = deps.renderSettingsButton(data, (item) => {
 				deps.clearTreeSelection(treeElement);
@@ -139,7 +143,7 @@
 				if (initialSelection.type === "dashboard") {
 					deps.renderDashboardOverview(mainElement, initialSelection.data);
 				} else if (initialSelection.type === "active") {
-					deps.renderEntryDetail(mainElement, initialSelection.entry);
+					deps.renderDashboardOverview(mainElement, data);
 				} else {
 					deps.renderMainMessage(mainElement, "表示できるデータがありません");
 				}
