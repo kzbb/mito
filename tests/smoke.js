@@ -54,6 +54,7 @@ function check(label, ok, detail) {
 		"createRendererComposer", "createTreeRenderer", "createEntryFormModule",
 		"createDocumentMutations", "downloadTextFile", "createCalendarUtils",
 		"createMarkdownEngine", "createRendererFallbacks", "nowJST",
+		"createShareLinkModule", "createAppShareActions",
 	].filter((n) => typeof window[n] !== "function"));
 	check("全モジュールがグローバル登録済み", globals.length === 0, globals.length ? `未登録: ${globals}` : "");
 
@@ -361,6 +362,119 @@ function check(label, ok, detail) {
 	check("インラインコードが<code>になる", html.includes("<code>code</code>"), html.slice(0, 120));
 	check("強調が<strong>になる", html.includes("<strong>強調</strong>"));
 	check("プレースホルダが漏れていない", !html.includes("MITO_CODE"));
+
+	// ============ 共有リンク ============
+	// 外部への通信はテストの前提にしたくないので fetch を差し替える。
+	// URL変換と圧縮の中身は tests/unit.js が見ているため、ここでは
+	// 「取得したものが通常の読み込み経路へ流れるか」だけを確かめる。
+	{
+		const shared = await page.evaluate(async () => {
+			const realFetch = window.fetch;
+			let requestedUrl = "";
+			window.fetch = async (input) => {
+				requestedUrl = String(input);
+				return new Response(JSON.stringify({
+					project: "共有ドキュメント",
+					calendar: { csvText: "年\n1900\n" },
+					active: [{ id: 1, category: "出来事", name: "共有エントリー", dateCalendar: { 年: "1900" } }],
+				}), { status: 200, headers: { "content-type": "application/json" } });
+			};
+
+			setDirty(false);
+			const ok = await shareActionsApi.loadFromSourceUrl(
+				"https://github.com/kzbb/mito/blob/main/sample/a.json", { confirmBeforeFetch: false });
+			window.fetch = realFetch;
+
+			return {
+				ok,
+				requestedUrl,
+				project: currentData?.project,
+				entries: currentData?.active?.length,
+				isDirty,
+				handle: currentFileHandle,
+				fileName: currentFileName,
+				cards: document.querySelectorAll(".dashboard-entry-card").length,
+			};
+		});
+		check("共有リンク: 取得したJSONが開く",
+			shared.ok === true && shared.project === "共有ドキュメント", JSON.stringify(shared));
+		check("共有リンク: 変換後のURLを取りに行く",
+			shared.requestedUrl === "https://raw.githubusercontent.com/kzbb/mito/main/sample/a.json", shared.requestedUrl);
+		check("共有リンク: 通常の読み込みと同じく描画される", shared.cards > 0, `${shared.cards}枚`);
+		check("共有リンク: 読み込み直後は未変更", shared.isDirty === false);
+		// ハンドルが無いので、保存すると必ず保存先を聞かれる（他人のファイルを上書きしない）
+		check("共有リンク: ファイルハンドルを持たない", shared.handle === null);
+		check("共有リンク: ファイル名がURLから決まる", shared.fileName === "a.json", shared.fileName);
+	}
+
+	// CORS拒否は fetch の TypeError としてしか観測できない。
+	// 「原因は置き場所の制約である」と伝わるかを確かめる。
+	{
+		const blocked = await page.evaluate(async () => {
+			const realFetch = window.fetch;
+			window.fetch = async () => { throw new TypeError("Failed to fetch"); };
+			const ok = await shareActionsApi.loadFromSourceUrl(
+				"https://example.com/a.json", { confirmBeforeFetch: false });
+			window.fetch = realFetch;
+			return { ok, status: document.getElementById("footer-status").textContent };
+		});
+		check("共有リンク: CORS拒否の理由が説明される",
+			blocked.ok === false && blocked.status.includes("CORS"), blocked.status);
+
+		// Googleドライブは非公開ファイルも存在しないファイルも404を返すため、
+		// 最も起きやすい失敗（共有設定の変更忘れ）へ誘導できているか確かめる
+		const driveNotFound = await page.evaluate(async () => {
+			const realFetch = window.fetch;
+			const realKey = window.MITO_CONFIG.googleDriveApiKey;
+			window.MITO_CONFIG.googleDriveApiKey = "TEST_KEY";
+			window.fetch = async () => new Response("{}", { status: 404 });
+			const ok = await shareActionsApi.loadFromSourceUrl(
+				"https://drive.google.com/file/d/ABC/view?usp=sharing", { confirmBeforeFetch: false });
+			window.fetch = realFetch;
+			window.MITO_CONFIG.googleDriveApiKey = realKey;
+			return { ok, status: document.getElementById("footer-status").textContent };
+		});
+		check("共有リンク: ドライブの404は共有設定の確認へ誘導する",
+			driveNotFound.ok === false && driveNotFound.status.includes("リンクを知っている全員"),
+			driveNotFound.status);
+
+		// 取得失敗をコンソールへ出すのは意図した動作なので、最後の検査からは除く
+		for (let i = errors.length - 1; i >= 0; i -= 1) {
+			if (errors[i].includes("Failed to fetch shared document")) {
+				errors.splice(i, 1);
+			}
+		}
+	}
+
+	// 埋め込みモード: ダイアログで生成したURLを、そのまま読み戻せるか
+	{
+		const inline = await page.evaluate(async () => {
+			document.getElementById("share-document").click();
+			// 埋め込みモードは既定で畳まれている（補助的な方法として扱っているため）
+			const section = document.getElementById("share-inline-section");
+			const collapsedOnOpen = section.open === false;
+			section.open = true;
+			document.getElementById("share-inline-build").click();
+			await new Promise((r) => setTimeout(r, 500));
+			const shareUrl = document.getElementById("share-inline-output").value;
+			document.getElementById("share-dialog").close();
+
+			const encoded = new URLSearchParams(new URL(shareUrl).hash.slice(1)).get("d");
+			currentData.project = "上書きされるはず";
+			const ok = await shareActionsApi.loadFromInlineData(encoded);
+			return {
+				ok, collapsedOnOpen,
+				dialogOpened: shareUrl.includes("#d="),
+				length: shareUrl.length,
+				project: currentData?.project,
+			};
+		});
+		check("共有リンク: 埋め込みモードは既定で畳まれている", inline.collapsedOnOpen === true);
+		check("共有リンク: 埋め込みモードのURLを生成できる",
+			inline.dialogOpened === true, `${inline.length}文字`);
+		check("共有リンク: 埋め込んだドキュメントを読み戻せる",
+			inline.ok === true && inline.project === "共有ドキュメント", JSON.stringify(inline));
+	}
 
 	// ============ エラーが出ていないか ============
 	check("コンソールエラーなし", errors.length === 0, errors.slice(0, 5).join(" | "));

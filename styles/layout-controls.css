@@ -1,6 +1,8 @@
 #new-file,
 #open-file,
+#open-url,
 #save-file,
+#share-document,
 #toggle-left-panel,
 #outline-settings,
 .form-actions button {
@@ -14,7 +16,9 @@
 
 #new-file,
 #open-file,
+#open-url,
 #save-file,
+#share-document,
 #toggle-left-panel {
 	padding: 4px 10px;
 	font-size: 0.8rem;
@@ -28,7 +32,9 @@
 
 #new-file:hover,
 #open-file:hover,
+#open-url:hover,
 #save-file:hover,
+#share-document:hover,
 #toggle-left-panel:hover,
 #outline-settings:hover,
 .form-actions button:hover {
@@ -38,7 +44,9 @@
 
 #new-file:active,
 #open-file:active,
+#open-url:active,
 #save-file:active,
+#share-document:active,
 #toggle-left-panel:active,
 #outline-settings:active,
 .form-actions button:active {
@@ -66,7 +74,9 @@
 
 #new-file:focus,
 #open-file:focus,
+#open-url:focus,
 #save-file:focus,
+#share-document:focus,
 #toggle-left-panel:focus,
 #outline-settings:focus {
 	outline: none;
@@ -74,7 +84,9 @@
 
 #new-file:focus-visible,
 #open-file:focus-visible,
+#open-url:focus-visible,
 #save-file:focus-visible,
+#share-document:focus-visible,
 #toggle-left-panel:focus-visible,
 #outline-settings:focus-visible {
 	outline: none;

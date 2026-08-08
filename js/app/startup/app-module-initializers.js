@@ -27,6 +27,10 @@
 	 *   setDocumentActionsApi: (api: any | null) => void,
 	 *   getOutlineViewApi: () => any,
 	 *   setOutlineViewApi: (api: any | null) => void,
+	 *   getShareActionsApi: () => any,
+	 *   setShareActionsApi: (api: any | null) => void,
+	 *   openDocumentFile: (file: File) => Promise<boolean>,
+	 *   hasAutosaveSnapshot: () => boolean,
 	 *   renderOutlineFromData: (data: any) => void,
 	 *   setFormStatus: (message: string) => void,
 	 *   setTopbarSaveStatus: (message: string) => void,
@@ -347,6 +351,31 @@
 		}
 
 		/**
+		 * 外部モジュールから共有リンク機能を初期化する。
+		 */
+		function initializeShareActionsModule() {
+			const createShareLinkModule = /** @type {any} */ (globalObject).createShareLinkModule;
+			const createAppShareActions = /** @type {any} */ (globalObject).createAppShareActions;
+			if (typeof createShareLinkModule !== "function" || typeof createAppShareActions !== "function") {
+				return;
+			}
+
+			const shareLink = createShareLinkModule({
+				getGoogleDriveApiKey: () => String(/** @type {any} */ (globalObject).MITO_CONFIG?.googleDriveApiKey ?? ""),
+			});
+
+			deps.setShareActionsApi(createAppShareActions({
+				shareLink,
+				getCurrentData: deps.getCurrentData,
+				openDocumentFile: deps.openDocumentFile,
+				hasAutosaveSnapshot: deps.hasAutosaveSnapshot,
+				setFormStatus: deps.setFormStatus,
+				setTopbarSaveStatus: deps.setTopbarSaveStatus,
+				renderFileLoadError: deps.renderFileLoadError,
+			}));
+		}
+
+		/**
 		 * 外部モジュールからレンダラーを初期化する。
 		 */
 		function initializeRenderers() {
@@ -610,6 +639,7 @@
 			initializePersistenceModule();
 			initializeOutlineViewModule();
 			initializeDocumentActionsModule();
+			initializeShareActionsModule();
 		}
 
 		return {
@@ -621,6 +651,7 @@
 			initializePersistenceModule,
 			initializeOutlineViewModule,
 			initializeDocumentActionsModule,
+			initializeShareActionsModule,
 		};
 	}
 

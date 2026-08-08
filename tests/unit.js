@@ -287,5 +287,110 @@ function extractFunction(relativePath, name) {
 		findCalendarRowIndexForEntry({ headers: [], rows: [] }, new Map(), { dateCalendar: { A: "1" } }), -1);
 }
 
-console.log(`\n${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+// -------------------------------------------------------- 共有リンク
+async function runShareLinkTests() {
+	const w = loadModule("js/modules/data/share-link.js");
+	const share = w.createShareLinkModule({ getGoogleDriveApiKey: () => "" });
+	const shareWithKey = w.createShareLinkModule({ getGoogleDriveApiKey: () => "KEY123" });
+	const resolve = share.resolveSourceUrl;
+
+	// 取得できない置き場所は、黙って失敗させず理由を返す
+	ok("resolveSourceUrl: http は拒否", resolve("http://example.com/a.json").ok === false);
+	ok("resolveSourceUrl: javascript: は拒否", resolve("javascript:alert(1)").ok === false);
+	ok("resolveSourceUrl: 空文字は拒否", resolve("   ").ok === false);
+	ok("resolveSourceUrl: URLでない文字列は拒否", resolve("not a url").ok === false);
+
+	equal("resolveSourceUrl: GitHubのblob URLをrawへ変換",
+		resolve("https://github.com/kzbb/mito/blob/main/sample/a.json").fetchUrl,
+		"https://raw.githubusercontent.com/kzbb/mito/main/sample/a.json");
+	ok("resolveSourceUrl: GitHubのリポジトリトップは拒否",
+		resolve("https://github.com/kzbb/mito").ok === false);
+
+	equal("resolveSourceUrl: Dropboxは取得用ホストへ差し替え",
+		resolve("https://www.dropbox.com/scl/fi/xyz/a.json?rlkey=k&dl=0").fetchUrl,
+		"https://dl.dropboxusercontent.com/scl/fi/xyz/a.json?rlkey=k&dl=1");
+
+	const oneDriveUrl = "https://1drv.ms/u/s!AbCdEf";
+	equal("resolveSourceUrl: OneDriveはshares APIの形式へ",
+		resolve(oneDriveUrl).fetchUrl,
+		`https://api.onedrive.com/v1.0/shares/u!${Buffer.from(oneDriveUrl).toString("base64url")}/root/content`);
+
+	ok("resolveSourceUrl: APIキー未設定のGoogleドライブは拒否",
+		resolve("https://drive.google.com/file/d/FILE_ID/view?usp=sharing").ok === false);
+	equal("resolveSourceUrl: APIキーがあればDrive API経由",
+		shareWithKey.resolveSourceUrl("https://drive.google.com/file/d/FILE_ID/view?usp=sharing").fetchUrl,
+		"https://www.googleapis.com/drive/v3/files/FILE_ID?alt=media&key=KEY123");
+	equal("resolveSourceUrl: Googleドライブの ?id= 形式",
+		shareWithKey.resolveSourceUrl("https://drive.google.com/open?id=OTHER_ID").fetchUrl,
+		"https://www.googleapis.com/drive/v3/files/OTHER_ID?alt=media&key=KEY123");
+
+	// 変換規則を持たない置き場所は素通し（CORSを返すサーバーならそのまま読める）
+	const direct = resolve("https://example.com/data/a.json");
+	equal("resolveSourceUrl: 未知のホストは素通し", [direct.provider, direct.fetchUrl],
+		["direct", "https://example.com/data/a.json"]);
+	equal("resolveSourceUrl: URLからファイル名を推測", direct.fileName, "a.json");
+	equal("resolveSourceUrl: .json以外は既定のファイル名",
+		resolve("https://example.com/export").fileName, "shared.json");
+
+	// 案内文とエラーメッセージが設定と食い違わないよう、貼れる置き場所の一覧は設定に追従する
+	equal("listSupportedProviderLabels: APIキーが無ければドライブを挙げない",
+		share.listSupportedProviderLabels(), ["GitHub", "Dropbox", "OneDrive"]);
+	equal("listSupportedProviderLabels: APIキーがあればドライブを挙げる",
+		shareWithKey.listSupportedProviderLabels(), ["GitHub", "Dropbox", "OneDrive", "Googleドライブ"]);
+
+	// 参照モードで載せるのは変換後ではなく元のURL（変換規則を直しても配布済みリンクが古びない）
+	const sourceShareUrl = share.buildSourceShareUrl(
+		"https://mito.bblab.org/?src=old#d=old", "https://example.com/a.json");
+	equal("buildSourceShareUrl: 既存のクエリとフラグメントを捨てる", sourceShareUrl,
+		"https://mito.bblab.org/?src=https%3A%2F%2Fexample.com%2Fa.json");
+	equal("readShareParams: 参照モードを読み戻せる",
+		share.readShareParams(sourceShareUrl),
+		{ sourceUrl: "https://example.com/a.json", inlineData: "" });
+
+	const inlineShareUrl = share.buildInlineShareUrl("https://mito.bblab.org/?src=old#d=old", "AbC-_1");
+	equal("buildInlineShareUrl: フラグメントへ入れる", inlineShareUrl, "https://mito.bblab.org/#d=AbC-_1");
+	equal("readShareParams: 埋め込みモードを読み戻せる",
+		share.readShareParams(inlineShareUrl), { sourceUrl: "", inlineData: "AbC-_1" });
+
+	equal("readShareParams: 共有パラメーターなし",
+		share.readShareParams("https://mito.bblab.org/"), { sourceUrl: "", inlineData: "" });
+	equal("readShareParams: URLでなければ空",
+		share.readShareParams("not a url"), { sourceUrl: "", inlineData: "" });
+
+	// 埋め込みモードのラウンドトリップ。base64urlはURLに入れて壊れないことも確かめる
+	const document = {
+		project: "共有テスト",
+		active: [{ id: 1, name: "日本語とASCIIの混在 / a&b=c", description: "改行\n入り" }],
+	};
+	const jsonText = JSON.stringify(document);
+	const encoded = await share.encodeInlineDocument(jsonText);
+	ok("encodeInlineDocument: URL安全な文字だけを返す", /^[A-Za-z0-9_-]+$/.test(encoded), encoded);
+	equal("encodeInlineDocument → decodeInlineDocument のラウンドトリップ",
+		JSON.parse(await share.decodeInlineDocument(encoded)), document);
+
+	const roundTripUrl = share.buildInlineShareUrl("https://mito.bblab.org/", encoded);
+	equal("埋め込みモード: 共有URLを経由しても復元できる",
+		JSON.parse(await share.decodeInlineDocument(share.readShareParams(roundTripUrl).inlineData)),
+		document);
+
+	// 圧縮している以上、繰り返しの多いドキュメントはJSONより短くなる
+	const repetitive = JSON.stringify({ active: Array.from({ length: 60 }, (_, i) => ({ id: i, name: "同じような名前" })) });
+	ok("encodeInlineDocument: 圧縮が効いている",
+		(await share.encodeInlineDocument(repetitive)).length < repetitive.length / 2);
+
+	let decodeFailed = false;
+	try {
+		await share.decodeInlineDocument("これはgzipではない");
+	} catch {
+		decodeFailed = true;
+	}
+	ok("decodeInlineDocument: 壊れた入力は例外になる", decodeFailed);
+}
+
+runShareLinkTests().then(() => {
+	console.log(`\n${passed} passed, ${failed} failed`);
+	process.exit(failed === 0 ? 0 : 1);
+}, (error) => {
+	console.error(error);
+	process.exit(1);
+});

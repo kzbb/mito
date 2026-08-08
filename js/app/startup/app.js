@@ -36,6 +36,9 @@ let documentActionsApi = null;
 /** @type {any | null} 左パネル（アウトライン）モジュールのAPI */
 let outlineViewApi = null;
 
+/** @type {any | null} 共有リンクモジュールのAPI */
+let shareActionsApi = null;
+
 /** @type {any | null} モジュール初期化コーディネーターのAPI */
 let moduleInitializersApi = null;
 
@@ -174,6 +177,12 @@ function initializeModules() {
 		setOutlineViewApi: (/** @type {any | null} */ api) => {
 			outlineViewApi = api;
 		},
+		getShareActionsApi: () => shareActionsApi,
+		setShareActionsApi: (/** @type {any | null} */ api) => {
+			shareActionsApi = api;
+		},
+		openDocumentFile: (/** @type {File} */ file) => handleOpenFile(file, null),
+		hasAutosaveSnapshot,
 		renderOutlineFromData: (/** @type {any} */ data) => {
 			renderOutlineFromData(data);
 		},
@@ -286,6 +295,20 @@ function requestDiscardUnsavedChanges(actionLabel) {
 	}
 
 	return window.confirm(`未保存の変更があります。${actionLabel}を続行しますか？`);
+}
+
+/**
+ * localStorageに未保存の下書きが残っているかを返す。
+ * 共有リンクを開く前に、下書きを失う可能性を知らせるために使う。
+ * @returns {boolean}
+ */
+function hasAutosaveSnapshot() {
+	try {
+		return Boolean(window.localStorage.getItem(AUTOSAVE_STORAGE_KEY));
+	} catch (error) {
+		console.error("Failed to read autosave snapshot", error);
+		return false;
+	}
 }
 
 /**
@@ -406,25 +429,31 @@ function renderFileLoadError(message) {
  * トップバーの「開く」から選択されたJSONファイルを処理する。
  * @param {File} file
  * @param {any | null} fileHandle showOpenFilePicker で得たハンドル。未対応環境ではnull
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>}
  */
 async function handleOpenFile(file, fileHandle) {
 	if (!requestDiscardUnsavedChanges("別ファイルを開く操作")) {
 		setFormStatus("ファイルを開く操作をキャンセルしました。");
-		return;
+		return false;
 	}
 
 	// 相対パスリンクの基準フォルダーは開いていた文書に紐づくため、
 	// 別の文書を開く時点で必ず捨てる。
 	linkBaseDirectoryHandle = null;
+	// 取得元URLも開いていた文書に紐づく。共有リンク経由の場合は読み込み後に付け直される。
+	shareActionsApi?.setCurrentSourceUrl?.("");
 
-	if (documentActionsApi && typeof documentActionsApi.handleOpenFile === "function") {
-		queueNextDataChangeDirtyState(false);
-		const opened = await documentActionsApi.handleOpenFile(file, fileHandle);
-		if (!opened) {
-			queueNextDataChangeDirtyState(null);
-		}
+	if (!documentActionsApi || typeof documentActionsApi.handleOpenFile !== "function") {
+		return false;
 	}
+
+	queueNextDataChangeDirtyState(false);
+	const opened = await documentActionsApi.handleOpenFile(file, fileHandle);
+	if (!opened) {
+		queueNextDataChangeDirtyState(null);
+	}
+
+	return Boolean(opened);
 }
 
 /**
@@ -435,6 +464,8 @@ function handleNewFile() {
 		setFormStatus("新規作成をキャンセルしました。");
 		return;
 	}
+
+	shareActionsApi?.setCurrentSourceUrl?.("");
 
 	if (documentActionsApi && typeof documentActionsApi.handleNewFile === "function") {
 		queueNextDataChangeDirtyState(true);
@@ -499,7 +530,26 @@ if (typeof fileActionSetup === "function") {
 	});
 }
 
+/**
+ * 起動時に開くドキュメントを決める。
+ *
+ * 共有リンクで開かれた場合はそれを優先し、下書き復元は行わない。
+ * 両方を続けて処理すると、後から出た確認ダイアログや状態表示が
+ * 前の結果を上書きしてしまうため、どちらか一方だけを実行する。
+ *
+ * @returns {Promise<void>}
+ */
+async function bootstrapInitialDocument() {
+	const handledShareLink = await (shareActionsApi?.loadFromLocation?.() ?? false);
+	if (handledShareLink) {
+		return;
+	}
+
+	tryRestoreAutosaveSnapshot();
+}
+
 renderWaitingForFile();
 formApi?.setupEntryForm?.();
+shareActionsApi?.setupShareUi?.();
 setTopbarSaveStatus("未保存");
-tryRestoreAutosaveSnapshot();
+void bootstrapInitialDocument();

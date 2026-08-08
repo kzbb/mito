@@ -13,7 +13,9 @@
             <button id="toggle-left-panel" class="left-panel-toggle" type="button" aria-controls="left-panel" aria-expanded="true" aria-label="左パネルを閉じる" title="左パネルを閉じる">◁│</button>
             <button id="new-file">新規作成</button>
             <button id="open-file">開く</button>
+            <button id="open-url">URLで開く</button>
             <button id="save-file">保存</button>
+            <button id="share-document">共有</button>
             <a href="https://github.com/kzbb/mito" target="_blank" rel="noopener noreferrer"><small>GitHub</small></a>
             <input id="json-file-input" type="file" accept=".json,application/json,text/plain" hidden>
             <span id="topbar-save-status" class="topbar-save-status" aria-live="polite">未保存</span>
@@ -107,6 +109,56 @@
         </footer>
     </div>
 
+    <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title">
+        <form method="dialog" class="share-dialog-form">
+            <h2 id="share-dialog-title" class="share-dialog-title">共有URLを作る</h2>
+
+            <section class="share-section">
+                <h3 class="share-section-title">ファイルのURLを参照する</h3>
+                <p class="share-note">
+                    JSONを置いた場所のURLを貼り付けてください。
+                    開いた人のブラウザがそのファイルを直接読みに行くので、
+                    リンクを知っていれば閲覧できる状態にしておいてください。
+                    <span id="share-source-providers"></span>
+                    ファイルを更新すれば、同じ共有URLから最新版が読まれます。
+                </p>
+                <div class="share-row">
+                    <input type="url" id="share-source-input" class="share-input" placeholder="https://example.com/data.json">
+                    <button type="button" id="share-source-build">生成</button>
+                </div>
+                <div id="share-source-result" class="share-result" hidden>
+                    <textarea id="share-source-output" class="share-output" rows="3" readonly aria-label="参照モードの共有URL"></textarea>
+                    <button type="button" id="share-source-copy">コピー</button>
+                </div>
+            </section>
+
+            <details id="share-inline-section" class="share-section share-section-secondary">
+                <summary class="share-section-summary">置き場所を使わずに共有する</summary>
+                <div class="share-section-body">
+                    <p class="share-note">
+                        ドキュメント本体を圧縮してURLに入れます。ファイルをどこにも置かずに済み、
+                        開いた人は何も取りに行きません。
+                        そのかわりURLが長くなり、内容はその時点のコピーで固定されます。
+                    </p>
+                    <div class="share-row">
+                        <button type="button" id="share-inline-build">生成</button>
+                    </div>
+                    <div id="share-inline-result" class="share-result" hidden>
+                        <textarea id="share-inline-output" class="share-output" rows="3" readonly aria-label="埋め込みモードの共有URL"></textarea>
+                        <button type="button" id="share-inline-copy">コピー</button>
+                    </div>
+                </div>
+            </details>
+
+            <p id="share-dialog-status" class="share-status" aria-live="polite"></p>
+
+            <div class="share-dialog-actions">
+                <button type="submit" value="close">閉じる</button>
+            </div>
+        </form>
+    </dialog>
+
+        <script src="js/config.js"></script>
         <script src="js/app/ui/app-layout.js"></script>
         <script src="js/app/actions/app-file-actions.js"></script>
         <script src="js/modules/renderers/renderer-fallbacks.js"></script>
@@ -124,7 +176,9 @@
         <script src="js/modules/data/document-mutations.js"></script>
         <script src="js/modules/data/file-download.js"></script>
         <script src="js/modules/data/persistence.js"></script>
+        <script src="js/modules/data/share-link.js"></script>
         <script src="js/app/actions/app-document-actions.js"></script>
+        <script src="js/app/actions/app-share-actions.js"></script>
         <script src="js/app/core/app-outline-view.js"></script>
         <script src="js/app/startup/app-module-initializers.js"></script>
         <script src="js/app/startup/app.js"></script>
