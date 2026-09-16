@@ -152,6 +152,8 @@
 }
 
 .entry-color-swatch-option {
+	/* 隠したradioの配置基準をラベル内に留め、閉じたパネルがページを伸ばさないようにする。 */
+	position: relative;
 	display: block;
 	cursor: pointer;
 }

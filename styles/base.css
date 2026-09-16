@@ -19,3 +19,17 @@ ul {
 	margin: 0;
 	padding-left: 18px;
 }
+
+/* ページ全体の縦スクロールは止め、各ペインの中でスクロールする。
+   印刷時は文書全体を流すため、この制約を適用しない。 */
+@media screen {
+	html {
+		height: 100%;
+		overflow: hidden;
+	}
+
+	body {
+		height: 100%;
+		overflow-y: hidden;
+	}
+}

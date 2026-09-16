@@ -1,10 +1,10 @@
 .app-layout {
 	min-width: 1120px;
-	height: 100vh;
-	min-height: 100vh;
+	height: 100%;
+	min-height: 0;
 	display: grid;
 	grid-template-columns: 1fr;
-	grid-template-rows: 40px 1fr 28px;
+	grid-template-rows: 40px minmax(0, 1fr) 28px;
 	grid-template-areas:
 		"topbar"
 		"columns"
