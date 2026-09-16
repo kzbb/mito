@@ -128,6 +128,8 @@
 					const writable = await currentFileHandle.createWritable();
 					await writable.write(jsonText);
 					await writable.close();
+					// 保存待ちの間に別文書を開いた場合、その保存先・状態を上書きしない。
+					if (deps.getCurrentData() !== currentData) return true;
 					commitUpdatedAt();
 					const handleName = ensureJsonExtension(currentFileHandle.name || suggestedName);
 					deps.setCurrentFileName(handleName);
@@ -149,6 +151,8 @@
 					const writable = await handle.createWritable();
 					await writable.write(jsonText);
 					await writable.close();
+					// 保存待ちの間に別文書を開いた場合、その保存先・状態を上書きしない。
+					if (deps.getCurrentData() !== currentData) return true;
 					commitUpdatedAt();
 					deps.setCurrentFileHandle(handle);
 					const handleName = ensureJsonExtension(handle.name || suggestedName);

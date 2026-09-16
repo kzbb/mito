@@ -45,6 +45,11 @@ let moduleInitializersApi = null;
 /** @type {boolean} 未保存の変更があるかどうか。ページ離脱確認に使用 */
 let isDirty = false;
 
+/** 保存開始後の変更を識別するための番号。 */
+let documentRevision = 0;
+/** 非同期保存の重複実行を防ぐ。 */
+let isSaving = false;
+
 /** @type {number | null} オートセーブのデバウンスタイマーID */
 let autosaveTimerId = null;
 
@@ -77,6 +82,7 @@ document.addEventListener("mito:data-changed", () => {
 		return;
 	}
 
+	documentRevision += 1;
 	if (nextDataChangeDirtyState !== null) {
 		setDirty(nextDataChangeDirtyState);
 		nextDataChangeDirtyState = null;
@@ -89,12 +95,27 @@ document.addEventListener("mito:data-changed", () => {
 	}
 });
 
+document.addEventListener("mito:entry-draft-changed", () => {
+	setDirty(isDirty);
+	if (hasUnsavedChanges()) scheduleAutosave();
+	else clearAutosaveSnapshot();
+});
+
+document.addEventListener("visibilitychange", () => {
+	if (document.visibilityState === "hidden" && hasUnsavedChanges()) persistAutosaveSnapshot();
+});
+
+function hasUnsavedChanges() {
+	return isDirty || Boolean(formApi?.getNewEntryDraft?.());
+}
+
 // 未保存の変更がある状態でページを離脱しようとした場合に確認ダイアログを出す。
 window.addEventListener("beforeunload", (event) => {
-	if (!isDirty) {
+	if (!hasUnsavedChanges()) {
 		return;
 	}
 
+	persistAutosaveSnapshot();
 	event.preventDefault();
 	event.returnValue = "";
 });
@@ -128,7 +149,12 @@ function initializeModules() {
 	moduleInitializersApi = createAppModuleInitializers({
 		getCurrentData: () => currentData,
 		setCurrentData: (/** @type {any} */ data) => {
-			currentData = data;
+			if (currentData !== data) {
+				clearAutosaveSnapshot();
+				currentData = data;
+				formApi?.clearNewEntryDraft?.();
+				formApi?.setFormModeAdd?.();
+			}
 		},
 		getEditingEntryId: () => editingEntryId,
 		setEditingEntryId: (/** @type {string | null} */ entryId) => {
@@ -209,6 +235,10 @@ function initializeModules() {
  */
 function setDirty(nextDirty) {
 	isDirty = Boolean(nextDirty);
+	if (formApi?.getNewEntryDraft?.()) {
+		setTopbarSaveStatus(isDirty ? "未保存: 変更・未追加のカードあり" : "未追加のカードあり（下書き）");
+		return;
+	}
 	if (!isDirty) {
 		setTopbarSaveStatus(`保存済み: ${currentFileName}`);
 		return;
@@ -258,10 +288,12 @@ function persistAutosaveSnapshot() {
 			fileName: currentFileName,
 			updatedAt: nowJST(),
 			data: currentData,
+			entryDraft: formApi?.getNewEntryDraft?.() ?? null,
 		};
 		window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(snapshot));
 	} catch (error) {
 		console.error("Failed to persist autosave snapshot", error);
+		setFormStatus("下書きをブラウザに保存できませんでした。入力中のカードを追加して、ファイルに保存してください。");
 	}
 }
 
@@ -290,7 +322,11 @@ function clearAutosaveSnapshot() {
  * @param {string} actionLabel
  */
 function requestDiscardUnsavedChanges(actionLabel) {
-	if (!isDirty || !currentData) {
+	if (isSaving) {
+		setFormStatus("保存が完了してから操作してください。");
+		return false;
+	}
+	if (!hasUnsavedChanges() || !currentData) {
 		return true;
 	}
 
@@ -328,7 +364,7 @@ function tryRestoreAutosaveSnapshot() {
 		return;
 	}
 
-	/** @type {{ fileName?: string, updatedAt?: string, data?: any } | null} */
+	/** @type {{ fileName?: string, updatedAt?: string, data?: any, entryDraft?: any } | null} */
 	let snapshot = null;
 	try {
 		snapshot = JSON.parse(rawSnapshot);
@@ -371,6 +407,7 @@ function tryRestoreAutosaveSnapshot() {
 		: "recovered.json";
 	queueNextDataChangeDirtyState(true);
 	renderOutlineFromData(normalized);
+	formApi?.restoreNewEntryDraft?.(snapshot.entryDraft);
 	setFormStatus("下書きデータを復元しました。保存して確定してください。");
 	setTopbarSaveStatus("未保存: 復元データ");
 	setDirty(true);
@@ -433,7 +470,7 @@ function renderFileLoadError(message) {
  */
 async function handleOpenFile(file, fileHandle) {
 	if (!requestDiscardUnsavedChanges("別ファイルを開く操作")) {
-		setFormStatus("ファイルを開く操作をキャンセルしました。");
+		setFormStatus(isSaving ? "保存が完了してからファイルを開いてください。" : "ファイルを開く操作をキャンセルしました。");
 		return false;
 	}
 
@@ -461,7 +498,7 @@ async function handleOpenFile(file, fileHandle) {
  */
 function handleNewFile() {
 	if (!requestDiscardUnsavedChanges("新規作成")) {
-		setFormStatus("新規作成をキャンセルしました。");
+		setFormStatus(isSaving ? "保存が完了してから新規作成してください。" : "新規作成をキャンセルしました。");
 		return;
 	}
 
@@ -483,12 +520,24 @@ function handleNewFile() {
  * @returns {Promise<void>}
  */
 async function saveCurrentData() {
-	if (persistenceApi && typeof persistenceApi.saveCurrentData === "function") {
+	if (isSaving || !persistenceApi || typeof persistenceApi.saveCurrentData !== "function") return;
+	const savedDocument = currentData;
+	const savedRevision = documentRevision;
+	isSaving = true;
+	try {
 		const saved = await persistenceApi.saveCurrentData();
-		if (saved) {
-			setDirty(false);
+		if (!saved || currentData !== savedDocument) return;
+		setDirty(documentRevision !== savedRevision);
+		if (hasUnsavedChanges()) {
+			setFormStatus(isDirty
+				? "保存中の追加編集が残っています。もう一度保存してください。"
+				: "追加済みのカードを保存しました。未追加の入力は下書きとして保持しています。");
+			persistAutosaveSnapshot();
+		} else {
 			clearAutosaveSnapshot();
 		}
+	} finally {
+		isSaving = false;
 	}
 }
 

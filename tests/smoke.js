@@ -8,6 +8,7 @@
 //   mkdir -p /tmp/mito-test && cd /tmp/mito-test
 //   npm init -y && npm i playwright && npx playwright install chromium
 //   NODE_PATH=/tmp/mito-test/node_modules node /path/to/mito/tests/smoke.js
+// 既存のChromiumを使う場合は MITO_CHROMIUM_EXECUTABLE に実行ファイルのパスを指定できる。
 //
 const { chromium } = require("playwright");
 const path = require("path");
@@ -23,7 +24,7 @@ function check(label, ok, detail) {
 }
 
 (async () => {
-	const browser = await chromium.launch();
+	const browser = await chromium.launch({ executablePath: process.env.MITO_CHROMIUM_EXECUTABLE || undefined });
 	const page = await browser.newPage();
 
 	const errors = [];
@@ -475,6 +476,159 @@ function check(label, ok, detail) {
 		check("共有リンク: 埋め込んだドキュメントを読み戻せる",
 			inline.ok === true && inline.project === "共有ドキュメント", JSON.stringify(inline));
 	}
+
+	// ============ 保存中の追加編集・重複保存 ============
+	{
+		const result = await page.evaluate(async () => {
+			let release;
+			let wrote;
+			let writes = 0;
+			const gate = new Promise((resolve) => { release = resolve; });
+			currentFileHandle = {
+				name: "concurrent.json",
+				createWritable: async () => ({
+					write: async (text) => { writes++; wrote = JSON.parse(text); },
+					close: () => gate,
+				}),
+			};
+			currentData.project = "保存開始時";
+			document.dispatchEvent(new Event("mito:data-changed"));
+			const saving = saveCurrentData();
+			currentData.project = "保存中の追加編集";
+			document.dispatchEvent(new Event("mito:data-changed"));
+			await saveCurrentData(); // 完了前の連打
+			const sameDocument = currentData;
+			handleNewFile(); // 保存中は文書の切り替えを待たせる
+			const switchBlocked = currentData === sameDocument;
+			release();
+			await saving;
+			const snapshot = JSON.parse(localStorage.getItem(AUTOSAVE_STORAGE_KEY));
+			const afterFirst = { dirty: isDirty, draftProject: snapshot?.data.project };
+			await saveCurrentData();
+			return {
+				switchBlocked, afterFirst, writes, savedProject: wrote.project,
+				cleanAfterSecond: !isDirty && !hasAutosaveSnapshot(),
+			};
+		});
+		check("保存中の編集は未保存のまま下書きに残る",
+			result.afterFirst.dirty && result.afterFirst.draftProject === "保存中の追加編集", JSON.stringify(result));
+		check("保存連打を抑止し、再保存すると追加編集も保存される",
+			result.writes === 2 && result.savedProject === "保存中の追加編集" && result.cleanAfterSecond);
+		check("保存中は文書を切り替えない", result.switchBlocked);
+
+		const canceled = await page.evaluate(async () => {
+			currentFileHandle = null;
+			window.showSaveFilePicker = async () => { throw new DOMException("Canceled", "AbortError"); };
+			currentData.project = "キャンセル後も残す";
+			document.dispatchEvent(new Event("mito:data-changed"));
+			persistAutosaveSnapshot();
+			const before = currentData.updatedAt;
+			await saveCurrentData();
+			return isDirty && hasAutosaveSnapshot() && !isSaving && currentData.updatedAt === before;
+		});
+		check("保存キャンセルで未保存状態・下書き・更新日時を維持する", canceled);
+		const failed = await page.evaluate(async () => {
+			currentFileHandle = {
+				name: "failed.json",
+				createWritable: async () => ({
+					write: async () => { throw new Error("simulated write failure"); },
+					close: async () => {},
+				}),
+			};
+			await saveCurrentData();
+			return isDirty && hasAutosaveSnapshot() && !isSaving
+				&& document.getElementById("topbar-save-status").textContent === "保存失敗";
+		});
+		check("書き込み失敗でも下書きと未保存状態を維持する", failed);
+		for (let i = errors.length - 1; i >= 0; i--) {
+			if (errors[i].includes("Failed to save JSON") && errors[i].includes("simulated write failure")) errors.splice(i, 1);
+		}
+
+	}
+
+	// ============ 未追加カードの下書きとキーボード操作 ============
+	await page.evaluate(async () => {
+		handleNewFile();
+		currentData.calendar = { csvText: "年\n2026\n2027" };
+		currentData.active[0].dateCalendar = { 年: "2026" };
+		renderOutlineFromData(currentData);
+		window.showSaveFilePicker = async () => ({
+			name: "draft.json",
+			createWritable: async () => ({ write: async () => {}, close: async () => {} }),
+		});
+		await saveCurrentData();
+	});
+	await page.fill("#entry-form [name=category]", "下書きカテゴリ");
+	await page.fill("#entry-form [name=name]", "入力途中");
+	await page.fill("#entry-form [name=description]", "  空白も保持\n次の行  ");
+	await page.selectOption('#entry-form [name="dateCalendar.年"]', "2027");
+	await page.locator('#entry-form .entry-color-swatch-option').filter({ has: page.locator('[value="#ffeef3"]') }).click();
+	await page.fill("#entry-form [name=dashboardOrder]", "7");
+	await page.waitForFunction(() => JSON.parse(localStorage.getItem(AUTOSAVE_STORAGE_KEY))?.entryDraft?.dashboardOrder === "7");
+	check("追加前の入力も下書き保存・離脱警告の対象になる", await page.evaluate(() => {
+		const snapshot = JSON.parse(localStorage.getItem(AUTOSAVE_STORAGE_KEY));
+		return !isDirty && hasUnsavedChanges() && snapshot.entryDraft.name === "入力途中"
+			&& !snapshot.data.active.some((entry) => entry.name === "入力途中");
+	}));
+
+	await page.locator(".dashboard-entry-card").first().click();
+	check("カードを選んでも下書きを保持し、戻るボタンを表示する",
+		await page.locator("#start-new-entry").textContent() === "下書きに戻る");
+	await page.click("#start-new-entry");
+	check("下書きへ戻ると全項目が復元する", await page.evaluate(() => {
+		const fields = new FormData(document.getElementById("entry-form"));
+		return editingEntryId === null && fields.get("name") === "入力途中"
+			&& fields.get("description") === "  空白も保持\n次の行  "
+			&& fields.get("dateCalendar.年") === "2027"
+			&& fields.get("color") === "#ffeef3" && fields.get("dashboardOrder") === "7";
+	}));
+	await page.locator("#category-select").focus();
+	await page.keyboard.press("Shift+Tab");
+	check("Shift+Tabでフォームの前へ移動できる", await page.evaluate(() =>
+		document.activeElement === document.getElementById("preview-entry")));
+	await page.locator('#entry-form [name="dashboardOrder"]').focus();
+	await page.keyboard.press("Tab");
+	check("Tabでフォームの後ろへ移動できる", await page.evaluate(() =>
+		!document.getElementById("entry-form").contains(document.activeElement)));
+
+	await page.evaluate(async () => { await saveCurrentData(); });
+	check("ファイル保存後も未追加カードの下書きは残る", await page.evaluate(() =>
+		!isDirty && hasUnsavedChanges() && hasAutosaveSnapshot()
+		&& document.getElementById("topbar-save-status").textContent.includes("未追加")));
+
+	// デバウンスを待たずに閉じても最後の文字が残る。
+	await page.fill('#entry-form [name="name"]', "閉じる直前の入力");
+	check("離脱時に直前の入力を下書き保存する", await page.evaluate(() => {
+		const event = new Event("beforeunload", { cancelable: true });
+		window.dispatchEvent(event);
+		return event.defaultPrevented
+			&& JSON.parse(localStorage.getItem(AUTOSAVE_STORAGE_KEY)).entryDraft.name === "閉じる直前の入力";
+	}));
+	page.removeAllListeners("dialog");
+	page.on("dialog", (dialog) => dialog.accept());
+	await page.reload();
+	await page.waitForFunction(() => document.querySelector('#entry-form [name="name"]').value === "閉じる直前の入力");
+	check("再起動でカードの下書きと日付・色を復元する", await page.evaluate(() => {
+		const fields = new FormData(document.getElementById("entry-form"));
+		return fields.get("description") === "  空白も保持\n次の行  "
+			&& fields.get("dateCalendar.年") === "2027" && fields.get("color") === "#ffeef3";
+	}));
+	await page.click("#preview-entry");
+	check("下書きを一度だけ追加し、入力欄と下書きをクリアする", await page.evaluate(() =>
+		currentData.active.filter((entry) => entry.name === "閉じる直前の入力").length === 1
+		&& formApi.getNewEntryDraft() === null
+		&& document.querySelector('#entry-form [name="name"]').value === ""));
+
+	// 入力を消した場合と、別文書を開いた場合に古い下書きが混ざらない。
+	await page.fill('#entry-form [name="name"]', "消す入力");
+	await page.fill('#entry-form [name="name"]', "");
+	check("入力を空に戻すと不要なカード下書きが消える", await page.evaluate(() => formApi.getNewEntryDraft() === null));
+	await page.fill('#entry-form [name="name"]', "前の文書の入力");
+	await page.setInputFiles("#json-file-input", path.join(repo, "sample/sample_space_race.json"));
+	await page.waitForFunction(() => currentFileName === "sample_space_race.json");
+	check("別文書を開くと前のカード下書きを引き継がない", await page.evaluate(() =>
+		formApi.getNewEntryDraft() === null && !hasUnsavedChanges()
+		&& document.querySelector('#entry-form [name="name"]').value === ""));
 
 	// ============ エラーが出ていないか ============
 	check("コンソールエラーなし", errors.length === 0, errors.slice(0, 5).join(" | "));

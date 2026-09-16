@@ -42,6 +42,58 @@
 
 		/** @type {((entry: any | null) => void) | null} */
 		let syncDateInputs = null;
+
+		/** @type {Record<string, any> | null} 未追加カード。既存カードの編集中も保持する。 */
+		let newEntryDraft = null;
+		let addModeInitialColor = DEFAULT_ENTRY_CARD_COLOR;
+
+		function getNewEntryDraft() {
+			return newEntryDraft;
+		}
+
+		function clearNewEntryDraft() {
+			newEntryDraft = null;
+		}
+
+		/** @param {any} draft */
+		function restoreNewEntryDraft(draft) {
+			newEntryDraft = draft && typeof draft === "object" && !Array.isArray(draft) ? draft : null;
+			setFormModeAdd();
+		}
+
+		/** @param {HTMLFormElement} formElement */
+		function captureNewEntryDraft(formElement) {
+			if (!deps.getCurrentData() || deps.getEditingEntryId() !== null) return;
+			const fields = new FormData(formElement);
+			/** @type {Record<string, any>} */
+			const draft = {
+				category: String(fields.get("category") ?? ""),
+				name: String(fields.get("name") ?? ""),
+				description: String(fields.get("description") ?? ""),
+				dashboardOrder: String(fields.get("dashboardOrder") ?? ""),
+				color: readEntryColor(formElement),
+				...buildTimelinePayload(formElement),
+			};
+			const hasInput = draft.category.length > 0 || draft.name.length > 0 || draft.description.length > 0
+				|| (draft.dashboardOrder !== "" && draft.dashboardOrder !== "0")
+				|| draft.color !== addModeInitialColor
+				|| Object.values(draft.dateCalendar ?? {}).some((value) => value !== "");
+			newEntryDraft = hasInput ? draft : null;
+			document.dispatchEvent(new Event("mito:entry-draft-changed"));
+		}
+
+		/** @param {HTMLFormElement} formElement */
+		function applyNewEntryDraft(formElement) {
+			if (!newEntryDraft) return;
+			for (const key of ["category", "name", "description", "dashboardOrder"]) {
+				const field = formElement.elements.namedItem(key);
+				if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+					field.value = typeof newEntryDraft[key] === "string" ? newEntryDraft[key] : "";
+				}
+			}
+			applyEntryColorSelection(formElement, newEntryDraft.color);
+			syncDateInputs?.(newEntryDraft);
+		}
 		/**
 		 * 左下ペインのエントリ入力フォームを初期化する。
 		 */
@@ -67,7 +119,7 @@
 				const currentData = deps.getCurrentData();
 				const editingEntryId = deps.getEditingEntryId();
 				if (!currentData || !editingEntryId || !Array.isArray(currentData.active)) {
-					syncDateInputs?.(null);
+					syncDateInputs?.(newEntryDraft);
 					return;
 				}
 
@@ -80,7 +132,7 @@
 				syncDateInputs?.(currentData.active[targetIndex] ?? null);
 			});
 
-			// Tab キーによるフォーカス移動をカスタム制御し、フォーム内で循環させる
+			// Tab はブラウザ標準の移動に任せ、フォームの外へも移動できるようにする。
 			formElement.addEventListener("keydown", (event) => {
 				// input要素でEnterキーを押したとき、SafariではsubmitのpreventDefaultだけでは
 				// スクロール位置が変わる問題が起きる。keydownで先に抑止して完全に防ぐ。
@@ -99,29 +151,12 @@
 					}
 					return;
 				}
-
-				if (event.key !== "Tab") {
-					return;
-				}
-
-				const focusables = getFormTabStops(formElement);
-				if (focusables.length === 0) {
-					return;
-				}
-
-				const active = document.activeElement;
-				const currentIndex = focusables.findIndex((element) => element === active);
-				const offset = event.shiftKey ? -1 : 1;
-				const normalizedIndex = currentIndex < 0 ? 0 : currentIndex;
-				const nextIndex = (normalizedIndex + offset + focusables.length) % focusables.length;
-
-				event.preventDefault();
-				focusables[nextIndex].focus();
 			});
 
 			// input / change どちらのイベントでもリアルタイム編集を反映する
 			// （select は input を発火しないブラウザがあるため change も購読する）
 			const handleRealtimeEdit = () => {
+				captureNewEntryDraft(formElement);
 				applyRealtimeEdit(formElement, mainElement);
 			};
 			formElement.addEventListener("input", handleRealtimeEdit);
@@ -176,7 +211,8 @@
 				const targetEntry = { id: nextId, ...entryPayload };
 				currentData.active.push(targetEntry);
 
-				// 追加直後にそのカードを編集状態にはせず、何も選択していない状態に戻す。
+				// 追加済みになった下書きを消し、次のカードの入力へ戻す。
+				clearNewEntryDraft();
 				setFormModeAdd();
 				deps.renderOutlineFromData(currentData);
 				if (wasDashboardView) {
@@ -192,15 +228,13 @@
 				deps.setFormStatus("新しいエントリを追加し、該当カテゴリへ反映しました。");
 			});
 
-				// フォームリセット（「新規カード」ボタン）で追加モードに戻す
-				// reset イベントはネイティブのフォームリセットより先に発火するため、
-				// 色選択の引き継ぎ処理はリセット完了後（次フレーム）まで遅延させる。
-			formElement.addEventListener("reset", () => {
-				window.requestAnimationFrame(() => {
-					setFormModeAdd();
-					syncDateInputs?.(null);
-				});
-				deps.setFormStatus("新しいエントリの作成を開始できます。入力後「新規カード」を押してください。");
+			// ネイティブのリセットで復元した下書きが消えないよう、自分で切り替える。
+			formElement.addEventListener("reset", (event) => {
+				event.preventDefault();
+				setFormModeAdd();
+				deps.setFormStatus(newEntryDraft
+					? "入力途中の下書きに戻りました。「新規カード」で追加できます。"
+					: "新しいエントリの作成を開始できます。入力後「新規カード」を押してください。");
 			});
 
 			deleteButton.addEventListener("click", () => {
@@ -528,25 +562,6 @@
 		}
 
 		/**
-		 * @param {HTMLFormElement} formElement
-		 * @returns {HTMLElement[]}
-		 */
-		function getFormTabStops(formElement) {
-			const selector = [
-				"input:not([type='hidden']):not([disabled])",
-				"textarea:not([disabled])",
-				"select:not([disabled])",
-				"button:not([disabled])",
-				"[tabindex]:not([tabindex='-1'])",
-			].join(",");
-
-			return Array.from(formElement.querySelectorAll(selector))
-				.filter((element) => element instanceof HTMLElement)
-				.filter((element) => !element.hasAttribute("hidden"))
-				.filter((element) => element.tabIndex >= 0);
-		}
-
-		/**
 		 * @param {FormData} formData
 		 * @param {string} key
 		 * @returns {string}
@@ -734,8 +749,11 @@
 			submitButton.type = "button";
 			submitButton.hidden = true;
 			resetButton.hidden = false;
+			resetButton.textContent = newEntryDraft ? "下書きに戻る" : "新規カード";
 			if (deleteButton) deleteButton.hidden = false;
-			deps.setFormStatus("編集中: 入力内容はリアルタイムで反映されます。次のカードを追加する場合は「新規カード」を押してください。");
+			deps.setFormStatus(newEntryDraft
+				? "編集中: 入力内容はリアルタイムで反映されます。未追加の入力は「下書きに戻る」で再開できます。"
+				: "編集中: 入力内容はリアルタイムで反映されます。次のカードを追加する場合は「新規カード」を押してください。");
 		}
 
 		/**
@@ -766,6 +784,8 @@
 				}
 				// カード色は前回選択した色を引き継ぐ（承前）
 				applyEntryColorSelection(formElement, lastUsedEntryColor);
+				if (!newEntryDraft) addModeInitialColor = lastUsedEntryColor;
+				applyNewEntryDraft(formElement);
 			}
 
 			const submitButton = /** @type {HTMLButtonElement | null} */ (document.getElementById("preview-entry"));
@@ -787,6 +807,9 @@
 
 		return {
 			setupEntryForm,
+			getNewEntryDraft,
+			clearNewEntryDraft,
+			restoreNewEntryDraft,
 			enterEditMode,
 			setFormModeAdd,
 		};
