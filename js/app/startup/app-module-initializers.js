@@ -566,7 +566,7 @@
 						return;
 					}
 
-					document.title = nextProject.trim() ? `${nextProject.trim()} - MITO` : "MITO";
+					document.title = nextProject.trim() || "年表";
 					callRenderer("updateOutlineProjectName", nextProject);
 				},
 				onOpenCalendarEditor: () => {

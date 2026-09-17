@@ -18,11 +18,11 @@
 	 * }} deps
 	 */
 	function createSettingsRenderer(deps) {
-        /** @type {WeakMap<object, { excluded: Set<string>, name: boolean, description: boolean }>} */
+        /** @type {WeakMap<object, { excluded: Set<string>, name: boolean, description: boolean, hideEmptyYears: boolean }>} */
         const printPreferences = new WeakMap();
         function preference() {
             const data = deps.getCurrentData();
-            if (!printPreferences.has(data)) printPreferences.set(data, { excluded: new Set(), name: true, description: true });
+            if (!printPreferences.has(data)) printPreferences.set(data, { excluded: new Set(), name: true, description: true, hideEmptyYears: false });
             return printPreferences.get(data);
         }
         function preparePrint() {
@@ -40,6 +40,14 @@
                 Array.from(row.children).forEach((cell, index) => {
                     if (excluded.has(keys[index])) cell.remove();
                 });
+            }
+            for (const cell of view.querySelectorAll(".dashboard-entry-cell.is-empty")) cell.textContent = "";
+            if (prefs.hideEmptyYears) {
+                for (const row of view.querySelectorAll("tbody tr")) {
+                    if (!row.querySelector(".dashboard-entry-card")) row.remove();
+                }
+                const range = view.querySelector(".dashboard-range");
+                if (range) range.textContent = `印刷行: ${view.querySelectorAll("tbody tr").length}`;
             }
             // Measure the longest printed line, including the bold column heading.
             const context = document.createElement("canvas").getContext("2d");
@@ -151,7 +159,21 @@
             print.textContent = "印刷プレビューを開く";
             print.disabled = headers.length === 0;
             print.addEventListener("click", () => { preparePrint(); window.print(); });
-            section.append(content, message, print);
+            const rows = document.createElement("fieldset");
+            const rowsLegend = document.createElement("legend");
+            rowsLegend.className = "settings-field-name";
+            rowsLegend.textContent = "印刷する行";
+            const rowLabel = document.createElement("label");
+            const hideEmpty = document.createElement("input");
+            hideEmpty.type = "checkbox";
+            hideEmpty.checked = prefs.hideEmptyYears;
+            hideEmpty.addEventListener("change", () => { prefs.hideEmptyYears = hideEmpty.checked; });
+            rowLabel.append(hideEmpty, document.createTextNode("出来事のない年を隠す"));
+            const rowHint = document.createElement("p");
+            rowHint.className = "settings-section-hint";
+            rowHint.textContent = "印刷する出来事の列に項目がない行を省きます。";
+            rows.append(rowsLegend, rowLabel, rowHint);
+            section.append(content, rows, message, print);
             mainElement.appendChild(section);
         }
 

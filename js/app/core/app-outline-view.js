@@ -113,7 +113,7 @@
 			deps.setCurrentData(data);
 			const projectName = deps.resolveProjectName(data);
 			scopeElement.textContent = projectName;
-			document.title = `${projectName} - MITO`;
+			document.title = projectName.trim() || "年表";
 			populateCategoryOptions(data);
 			const openCategories = deps.captureOpenCategories(treeElement);
 			treeElement.innerHTML = "";
@@ -173,6 +173,7 @@
 		 * ファイル読み込み前の待機状態のUIを表示する。
 		 */
 		function renderWaitingForFile() {
+			document.title = "MITO";
 			const scopeElement = document.getElementById("outline-scope");
 			const treeElement = /** @type {HTMLElement | null} */ (document.getElementById("explorer-tree"));
 			const mainElement = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
