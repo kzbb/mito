@@ -390,6 +390,7 @@
 				mutateDocument,
 				onEnterEditMode: (/** @type {any} */ entry) => {
 					callForm("enterEditMode", entry);
+					document.dispatchEvent(new Event("mito:open-panel"));
 				},
 				onStartNewEntry: () => {
 					callForm("setFormModeAdd");
@@ -401,6 +402,10 @@
 						return;
 					}
 
+					if (matchMedia("(max-width: 639px)").matches) {
+						callRenderer("renderEntryDetail", mainElement, entry);
+						return;
+					}
 					callTree("focusNewEntryInTree", entry);
 					callRenderer("renderDashboardOverview", mainElement, currentData);
 					callForm("enterEditMode", entry);

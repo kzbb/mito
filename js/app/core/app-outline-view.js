@@ -121,12 +121,18 @@
 			const grouped = deps.groupActiveEntriesByCategory(data);
 			const dashboardSelection = deps.renderDashboardItem(treeElement, data, (item, button) => {
 				deps.selectTreeLeaf(treeElement, button);
+				document.dispatchEvent(new Event("mito:close-panel"));
 				deps.renderDashboardOverview(mainElement, item.data);
 			});
 			const firstSelection = deps.renderCategoryTree(treeElement, grouped, (entry, button) => {
 				deps.selectTreeLeaf(treeElement, button);
 				const entryId = String(entry?.id ?? "");
 				const latestEntry = entryId ? (deps.findActiveEntryById(data, entryId) ?? entry) : entry;
+				if (matchMedia("(max-width: 639px)").matches) {
+					document.dispatchEvent(new Event("mito:close-panel"));
+					deps.renderEntryDetail(mainElement, latestEntry);
+					return;
+				}
 				deps.renderDashboardOverview(mainElement, data, {
 					ensureCategory: typeof latestEntry?.category === "string" ? latestEntry.category : "",
 				});
@@ -134,6 +140,7 @@
 			}, openCategories);
 			const settingsSelection = deps.renderSettingsButton(data, (item) => {
 				deps.clearTreeSelection(treeElement);
+				document.dispatchEvent(new Event("mito:close-panel"));
 				deps.renderSettingsOverview(mainElement, item.data);
 			});
 

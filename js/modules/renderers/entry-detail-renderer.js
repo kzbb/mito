@@ -3,6 +3,7 @@
 (function registerEntryDetailRenderer(globalObject) {
 	/**
 	 * @param {{
+	 *   onEnterEditMode: (entry: any) => void,
 	 *   onMoveEntryToDeletedFromDetail: (entry: any) => any | null,
 	 *   onSetFormStatus: (message: string) => void,
 	 *   onSetTopbarSaveStatus: (message: string) => void,
@@ -66,6 +67,12 @@
 				deps.onBackToDashboard(mainElement);
 			});
 			header.appendChild(backButton);
+			const editButton = document.createElement("button");
+			editButton.type = "button";
+			editButton.className = "entry-wiki-edit-button";
+			editButton.textContent = "編集";
+			editButton.addEventListener("click", () => deps.onEnterEditMode(entry));
+			header.appendChild(editButton);
 
 			const title = document.createElement("h1");
 			title.className = "entry-wiki-title";
@@ -150,6 +157,8 @@
 
 			article.appendChild(body);
 			mainElement.appendChild(article);
+			mainElement.scrollTop = 0;
+			backButton.focus({ preventScroll: true });
 		}
 
 		/**

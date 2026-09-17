@@ -4,6 +4,8 @@
 	/**
 	 * @param {{
 	 *   getCurrentData: () => any,
+	 *   createPrintDashboard: () => HTMLElement,
+	 *   onBackToDashboard: (mainElement: HTMLElement) => void,
 	 *   mutateDocument: (mutator: (data: any) => void) => boolean,
 	 *   onPermanentlyDeleteDeletedEntry: (entry: any) => boolean,
 	 *   onRestoreDeletedEntry: (entry: any) => any | null,
@@ -16,6 +18,143 @@
 	 * }} deps
 	 */
 	function createSettingsRenderer(deps) {
+        /** @type {WeakMap<object, { excluded: Set<string>, name: boolean, description: boolean }>} */
+        const printPreferences = new WeakMap();
+        function preference() {
+            const data = deps.getCurrentData();
+            if (!printPreferences.has(data)) printPreferences.set(data, { excluded: new Set(), name: true, description: true });
+            return printPreferences.get(data);
+        }
+        function preparePrint() {
+            document.getElementById("mito-print-view")?.remove();
+            if (!deps.getCurrentData()) return;
+            const view = deps.createPrintDashboard();
+            const prefs = preference();
+            if (!prefs) return;
+            view.id = "mito-print-view";
+            const headers = Array.from(view.querySelectorAll("thead th"));
+            const keys = headers.map((header, index) => `${header.classList.contains("dashboard-calendar-header") ? "calendar" : "category"}:${header.textContent}`);
+            // Keep at least one column if the document structure changed since selection.
+            const excluded = keys.every(key => prefs.excluded.has(key)) ? new Set() : prefs.excluded;
+            for (const row of view.querySelectorAll("tr, colgroup")) {
+                Array.from(row.children).forEach((cell, index) => {
+                    if (excluded.has(keys[index])) cell.remove();
+                });
+            }
+            // Measure the longest printed line, including the bold column heading.
+            const context = document.createElement("canvas").getContext("2d");
+            if (context) {
+                const family = getComputedStyle(document.body).fontFamily;
+                const rows = Array.from(view.querySelectorAll("tr"));
+                view.querySelectorAll("col").forEach((col, index) => {
+                    if (!col.classList.contains("dashboard-calendar-col")) return;
+                    let width = 0;
+                    for (const row of rows) {
+                        const cell = row.children[index];
+                        context.font = `${cell?.tagName === "TH" ? "700" : "400"} 9pt ${family}`;
+                        for (const line of (cell?.textContent ?? "").split(/\r?\n/)) {
+                            width = Math.max(width, context.measureText(line).width);
+                        }
+                    }
+                    // 4pt padding on either side, rounded up to avoid fractional clipping.
+                    col.style.setProperty("--print-date-width", `${Math.ceil(width + 8 * 96 / 72 + 1)}px`);
+                });
+            }
+            const shared = /** @type {any} */ (globalObject).createRendererFallbacks();
+            for (const card of view.querySelectorAll(".dashboard-entry-card")) {
+                if (!prefs.name) card.querySelector(".dashboard-entry-card-name")?.remove();
+                const description = card.querySelector(".dashboard-entry-card-description");
+                if (!prefs.description) description?.remove();
+                else if (description) {
+                    const entry = deps.getCurrentData().active?.find(item => String(item.id) === /** @type {HTMLElement} */ (card).dataset.entryId);
+                    description.innerHTML = shared.renderMarkdownToHtml(String(entry?.description ?? ""));
+                }
+            }
+            view.querySelector(".entry-meta")?.remove();
+            document.body.appendChild(view);
+        }
+        window.addEventListener("beforeprint", preparePrint);
+        window.addEventListener("afterprint", () => document.getElementById("mito-print-view")?.remove());
+
+        /** @param {HTMLElement} mainElement */
+        function renderPrintSettings(mainElement) {
+            const preview = deps.createPrintDashboard();
+            const headers = Array.from(preview.querySelectorAll("thead th"));
+            const prefs = preference();
+            if (!prefs) return;
+            const section = document.createElement("section");
+            section.className = "settings-section print-settings";
+            const heading = document.createElement("h3");
+            heading.className = "settings-section-title";
+            heading.textContent = "印刷設定";
+            section.appendChild(heading);
+            const hint = document.createElement("p");
+            hint.className = "settings-section-hint";
+            hint.textContent = "現在の年表の列から選びます。画面の表示は変わりません。選択はこの文書を開いている間だけ保持します。";
+            section.appendChild(hint);
+            const message = document.createElement("p");
+            message.className = "settings-section-hint print-settings-message";
+            message.setAttribute("role", "status");
+            const columns = document.createElement("fieldset");
+            const legend = document.createElement("legend");
+            legend.className = "settings-field-name";
+            legend.textContent = "印刷する列";
+            columns.appendChild(legend);
+            headers.forEach((header, index) => {
+                const key = `${header.classList.contains("dashboard-calendar-header") ? "calendar" : "category"}:${header.textContent}`;
+                const label = document.createElement("label");
+                const input = document.createElement("input");
+                input.type = "checkbox";
+                input.checked = !prefs.excluded.has(key);
+                input.addEventListener("change", () => {
+                    if (!columns.querySelector("input:checked")) {
+                        input.checked = true;
+                        message.textContent = "列は少なくとも1つ選んでください。";
+                        return;
+                    }
+                    if (input.checked) prefs.excluded.delete(key); else prefs.excluded.add(key);
+                    message.textContent = "";
+                });
+                label.append(input, document.createTextNode(header.textContent ?? ""));
+                columns.appendChild(label);
+            });
+            if (headers.length && !columns.querySelector("input:checked")) {
+                prefs.excluded.clear();
+                columns.querySelectorAll("input").forEach(input => { input.checked = true; });
+            }
+            section.appendChild(columns);
+            const content = document.createElement("fieldset");
+            const contentLegend = document.createElement("legend");
+            contentLegend.className = "settings-field-name";
+            contentLegend.textContent = "カードに含める内容（全カード共通）";
+            content.appendChild(contentLegend);
+            for (const [key, text] of [["name", "名称"], ["description", "説明"]]) {
+                const label = document.createElement("label");
+                const input = document.createElement("input");
+                input.type = "checkbox";
+                input.checked = prefs[key];
+                input.addEventListener("change", () => {
+                    if (!content.querySelector("input:checked")) {
+                        input.checked = true;
+                        message.textContent = "名称か説明を少なくとも1つ選んでください。";
+                        return;
+                    }
+                    prefs[key] = input.checked;
+                    message.textContent = "";
+                });
+                label.append(input, document.createTextNode(text));
+                content.appendChild(label);
+            }
+            const print = document.createElement("button");
+            print.type = "button";
+            print.className = "settings-calendar-button print-preview-button";
+            print.textContent = "印刷プレビューを開く";
+            print.disabled = headers.length === 0;
+            print.addEventListener("click", () => { preparePrint(); window.print(); });
+            section.append(content, message, print);
+            mainElement.appendChild(section);
+        }
+
 		/**
 		 * @param {any} data
 		 * @param {(item: any) => void} onSelect
@@ -79,12 +218,25 @@
 			const title = document.createElement("h2");
 			title.className = "settings-page-title";
 			title.textContent = "設定";
-			mainElement.appendChild(title);
+			const navigation = document.createElement("div");
+			navigation.className = "settings-navigation";
+			const back = document.createElement("button");
+			back.type = "button";
+			back.className = "settings-back-button";
+			back.textContent = "← 戻る";
+			back.addEventListener("click", () => {
+				deps.onBackToDashboard(mainElement);
+				document.getElementById(matchMedia("(max-width: 639px)").matches ? "topbar-menu-toggle" : "outline-settings")?.focus();
+			});
+			navigation.append(back, title);
+			mainElement.appendChild(navigation);
+			mainElement.scrollTop = 0;
 
 			const settings = data?.settings && typeof data.settings === "object" ? data.settings : {};
 			const deletedEntries = Array.isArray(data?.deleted) ? data.deleted : [];
 			const projectName = typeof data?.project === "string" ? data.project : "";
 
+			renderPrintSettings(mainElement);
 			const calendarSection = document.createElement("section");
 			calendarSection.className = "settings-section";
 			const calendarTitle = document.createElement("h3");

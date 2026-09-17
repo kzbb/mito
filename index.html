@@ -9,24 +9,37 @@
 <body>
     <div class="app-layout">
         <header class="topbar">
-            <h1 class="app-title"><a href="https://bblab.org/mito/" target="_blank" rel="noopener noreferrer">MITO</a></h1>
-            <button id="toggle-left-panel" class="left-panel-toggle" type="button" aria-controls="left-panel" aria-expanded="true" aria-label="左パネルを閉じる" title="左パネルを閉じる">◁│</button>
-            <button id="new-file">新規作成</button>
-            <button id="open-file">開く</button>
-            <button id="open-url">URLで開く</button>
+            <button id="toggle-left-panel" class="left-panel-toggle" type="button" aria-controls="left-panel" aria-expanded="true" aria-label="サイドパネルを閉じる" title="サイドパネルを閉じる"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 4v16" stroke="currentColor" stroke-width="1.7"/><path class="sidebar-icon-fill" d="M4 5h4v14H4z" fill="currentColor"/></svg></button>
+            <div class="toolbar-menu file-menu">
+                <button id="file-menu-toggle" type="button" aria-controls="file-actions" aria-expanded="false">ファイル ▾</button>
+                <div id="file-actions" class="toolbar-popup" hidden>
+                    <button id="new-file">新規作成</button>
+                    <button id="open-file">開く</button>
+                    <button id="open-url">URLから開く</button>
+                </div>
+            </div>
             <button id="save-file">保存</button>
             <button id="share-document">共有</button>
-            <a href="https://github.com/kzbb/mito" target="_blank" rel="noopener noreferrer"><small>GitHub</small></a>
-            <input id="json-file-input" type="file" accept=".json,application/json,text/plain" hidden>
+            <button id="outline-settings" type="button" hidden>設定</button>
             <span id="topbar-save-status" class="topbar-save-status" aria-live="polite">未保存</span>
+            <div class="toolbar-menu overflow-menu">
+                <button id="topbar-menu-toggle" type="button" aria-controls="topbar-actions" aria-expanded="false" aria-label="その他の操作" title="その他の操作">⋯</button>
+                <div id="topbar-actions" class="toolbar-popup" hidden>
+                    <div id="mobile-file-actions"></div>
+                    <a href="https://github.com/kzbb/mito" target="_blank" rel="noopener noreferrer">GitHub</a>
+                    <a href="https://bblab.org/mito/" target="_blank" rel="noopener noreferrer">MITOについて</a>
+                </div>
+            </div>
+            <input id="json-file-input" type="file" accept=".json,application/json,text/plain" hidden>
         </header>
 
         <section class="columns" aria-label="Two column layout">
-            <aside class="left-window" id="left-panel" aria-label="Left panel">
+            <button id="panel-backdrop" type="button" aria-label="サイドパネルを閉じる" hidden tabindex="-1"></button>
+            <aside class="left-window" id="left-panel" aria-label="サイドパネル">
+                <button id="close-left-panel" type="button" aria-label="サイドパネルを閉じる">閉じる ×</button>
                 <section class="left-pane top-pane" aria-label="Outline panel">
                     <div class="outline-header">
                         <div class="outline-scope" id="outline-scope">未選択</div>
-                        <button id="outline-settings" type="button" hidden>設定</button>
                     </div>
                     <nav class="explorer-tree" id="explorer-tree" aria-label="Project explorer">
                         <div class="tree-item"><span class="tree-leaf">「新規作成」または「開く」で開始してください</span></div>

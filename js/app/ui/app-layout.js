@@ -10,26 +10,151 @@
 		enableLeftPaneResize();
 	}
 
-	/** 左パネルの表示・非表示を切り替える。 */
+	/** 画面幅ごとに開閉状態を保持し、狭い画面ではモーダルのドロワーにする。 */
 	function setupLeftPanelToggle() {
-		const columns = /** @type {HTMLElement | null} */ (document.querySelector(".columns"));
-		const panel = /** @type {HTMLElement | null} */ (document.getElementById("left-panel"));
-		const button = /** @type {HTMLButtonElement | null} */ (document.getElementById("toggle-left-panel"));
-		if (!columns || !panel || !button) return;
-
-		const applyState = (collapsed) => {
-			columns.classList.toggle("is-left-panel-collapsed", collapsed);
-			panel.setAttribute("aria-hidden", String(collapsed));
-			button.setAttribute("aria-expanded", String(!collapsed));
-			const label = collapsed ? "左パネルを開く" : "左パネルを閉じる";
-			button.textContent = collapsed ? "▷│" : "◁│";
+		const columns = document.querySelector(".columns");
+		const panel = document.getElementById("left-panel");
+		const button = document.getElementById("toggle-left-panel");
+		const backdrop = document.getElementById("panel-backdrop");
+		const close = document.getElementById("close-left-panel");
+		const main = /** @type {HTMLElement | null} */ (document.querySelector(".main-window"));
+		const topbar = /** @type {HTMLElement | null} */ (document.querySelector(".topbar"));
+		if (!columns || !panel || !button || !backdrop || !close || !main || !topbar) return;
+		const compact = matchMedia("(max-width: 1023px)");
+		let desktopOpen = true;
+		try { desktopOpen = localStorage.getItem("mito.sidebar.open") !== "false"; } catch (_) { /* Storage may be disabled. */ }
+		let compactOpen = false;
+		/** @type {HTMLElement | null} */
+		let returnFocus = null;
+		const isOpen = () => compact.matches ? compactOpen : desktopOpen;
+		const applyState = () => {
+			const open = isOpen();
+			const modal = compact.matches && open;
+			columns.classList.toggle("is-left-panel-collapsed", !open);
+			panel.inert = !open;
+			panel.setAttribute("aria-hidden", String(!open));
+			button.setAttribute("aria-expanded", String(open));
+			const label = open ? "サイドパネルを閉じる" : "サイドパネルを開く";
 			button.setAttribute("aria-label", label);
 			button.title = label;
+			backdrop.hidden = !modal;
+			main.inert = modal;
+			topbar.inert = modal;
+			if (modal) {
+				panel.setAttribute("role", "dialog");
+				panel.setAttribute("aria-modal", "true");
+			} else {
+				panel.removeAttribute("role");
+				panel.removeAttribute("aria-modal");
+			}
 		};
-
-		button.addEventListener("click", () => {
-			applyState(!columns.classList.contains("is-left-panel-collapsed"));
+		/** @param {boolean} open */
+		const setOpen = (open) => {
+			if (open && !isOpen()) returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : button;
+			if (compact.matches) compactOpen = open;
+			else {
+				desktopOpen = open;
+				try { localStorage.setItem("mito.sidebar.open", String(open)); } catch (_) { /* Optional preference. */ }
+			}
+			applyState();
+			if (compact.matches && open) close.focus();
+			else if (!open) (returnFocus?.isConnected ? returnFocus : button).focus();
+		};
+		button.addEventListener("click", () => setOpen(!isOpen()));
+		close.addEventListener("click", () => setOpen(false));
+		backdrop.addEventListener("click", () => setOpen(false));
+		document.addEventListener("mito:open-panel", () => {
+			setOpen(true);
+			if (compact.matches) {
+				const input = /** @type {HTMLElement | null} */ (panel.querySelector('input[name="name"]'));
+				input?.focus({ preventScroll: true });
+				input?.scrollIntoView({ block: "center" });
+			}
 		});
+		document.addEventListener("mito:close-panel", () => { if (compact.matches && isOpen()) setOpen(false); });
+		document.addEventListener("keydown", (event) => {
+			if (!compact.matches || !isOpen()) return;
+			if (event.key === "Escape") { event.preventDefault(); setOpen(false); }
+			if (event.key !== "Tab") return;
+			const items = Array.from(panel.querySelectorAll('button, a[href], input, textarea, select, [tabindex="0"]'))
+				.filter((item) => item instanceof HTMLElement && item.getClientRects().length && !item.hasAttribute("disabled"));
+			const first = /** @type {HTMLElement | undefined} */ (items[0]);
+			const last = /** @type {HTMLElement | undefined} */ (items[items.length - 1]);
+			if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+			else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+		});
+		compact.addEventListener("change", () => {
+			applyState();
+			if (compact.matches && isOpen()) close.focus();
+			else if ((!isOpen() && panel.contains(document.activeElement)) || document.activeElement === close) button.focus();
+		});
+		applyState();
+		setupTopbarMenu();
+	}
+
+	function setupTopbarMenu() {
+		const phone = matchMedia("(max-width: 639px)");
+		const fileActions = document.getElementById("file-actions");
+		const mobileActions = document.getElementById("mobile-file-actions");
+		const share = document.getElementById("share-document");
+		const settings = document.getElementById("outline-settings");
+		const status = document.getElementById("topbar-save-status");
+		if (!fileActions || !mobileActions || !share || !settings || !status) return;
+		const fileButtons = Array.from(fileActions.children);
+		const menus = ["file-menu-toggle", "topbar-menu-toggle"].map(id => {
+			const button = document.getElementById(id);
+			const popup = document.getElementById(button?.getAttribute("aria-controls") ?? "");
+			return { button, popup };
+		});
+		const closeAll = () => {
+			for (const {button, popup} of menus) {
+				if (!button || !popup) continue;
+				popup.hidden = true;
+				button.setAttribute("aria-expanded", "false");
+			}
+		};
+		for (const {button, popup} of menus) {
+			if (!button || !popup) continue;
+			button.addEventListener("click", () => {
+				const open = popup.hidden;
+				closeAll();
+				popup.hidden = !open;
+				button.setAttribute("aria-expanded", String(open));
+			});
+			button.parentElement?.addEventListener("focusout", () => {
+				setTimeout(() => {
+					if (!button.parentElement?.contains(document.activeElement)) {
+						popup.hidden = true;
+						button.setAttribute("aria-expanded", "false");
+					}
+				}, 0);
+			});
+		}
+		document.addEventListener("click", event => {
+			if (!(event.target instanceof Node)) return;
+			if (menus.some(({button}) => button?.contains(/** @type {Node} */ (event.target)))) return;
+			for (const {button, popup} of menus) {
+				if (!popup?.hidden && popup?.contains(document.activeElement)) button?.focus();
+			}
+			closeAll();
+		});
+		document.addEventListener("keydown", event => {
+			if (event.key !== "Escape") return;
+			for (const {button, popup} of menus) if (popup && !popup.hidden) button?.focus();
+			closeAll();
+		});
+		const arrange = () => {
+			const focused = document.activeElement;
+			if (menus.some(({popup}) => popup?.contains(focused)) || focused === share || focused === settings || focused === menus[0].button) {
+				menus[1].button?.focus();
+			}
+			closeAll();
+			for (const button of fileButtons) (phone.matches ? mobileActions : fileActions).appendChild(button);
+			if (phone.matches) mobileActions.append(share, settings);
+			else status.before(share, settings);
+		};
+		phone.addEventListener("change", arrange);
+		arrange();
 	}
 
 	/**

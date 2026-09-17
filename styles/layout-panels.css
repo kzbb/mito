@@ -70,3 +70,10 @@
 	gap: 8px;
 	margin-bottom: 8px;
 }
+
+/* Keep content padding inside the scrolling panes, with the scrollbar at the divider. */
+@media screen and (min-width: 1024px) {
+ .left-window { padding-right: 0; }
+ .left-window > .left-pane { padding-right: 12px; }
+ .left-window > .left-pane-splitter { margin-right: 0; }
+}

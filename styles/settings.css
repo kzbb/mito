@@ -175,3 +175,21 @@
 	outline: none;
 	box-shadow: inset 0 0 0 2px var(--accent);
 }
+
+.settings-navigation { position: sticky; top: -12px; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 0; margin-bottom: 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.settings-navigation .settings-page-title { margin: 0; }
+.settings-back-button { padding: 6px 10px; border: 1px solid var(--control-border); border-radius: 4px; background: var(--control-bg); color: var(--text); font: inherit; font-size: 0.82rem; cursor: pointer; }
+@media screen and (max-width: 639px) {
+ .settings-navigation { top: -8px; }
+ .settings-back-button { min-height: 44px; }
+}
+
+.print-settings fieldset { min-width: 0; margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.print-settings legend { padding: 0 4px; }
+.print-settings label { display: flex; clear: both; align-items: center; gap: 8px; min-height: 28px; font-size: 0.84rem; cursor: pointer; }
+.print-settings input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--accent-2); }
+.print-preview-button { margin-left: 8px; }
+.print-settings-message:empty { display: none; }
+@media screen and (max-width: 639px) {
+ .print-settings label, .print-preview-button { min-height: 44px; }
+}

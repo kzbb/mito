@@ -1,3 +1,4 @@
+#mito-print-view { display: none; }
 @media print {
 	@page {
 		margin: 12mm;
@@ -67,4 +68,34 @@
 		text-decoration: none;
 		color: inherit;
 	}
+}
+
+@media print {
+ body:has(#mito-print-view) > .app-layout { display: none !important; }
+ #mito-print-view { display: block; container-type: inline-size; }
+ #mito-print-view .dashboard-table-wrap { overflow: visible; height: auto; }
+ #mito-print-view .dashboard-entry-card-description { max-height: none; overflow: visible; -webkit-line-clamp: unset; }
+}
+
+/* Paper layout: plain text cells, independent of the screen's card widths. */
+@media print {
+ #mito-print-view, .dashboard-table-wrap { width: 100%; max-width: 100%; min-width: 0; box-shadow: none; background: white; }
+ .dashboard-table { width: 100%; table-layout: fixed; min-width: 0; }
+ .dashboard-table col { min-width: 0; }
+ .dashboard-table .dashboard-calendar-col { width: min(var(--print-date-width, 8cqw), 8cqw); }
+ .dashboard-table .dashboard-entry-col { width: auto; min-width: 0; }
+ .dashboard-table th, .dashboard-table td { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 9pt; padding: 4pt; }
+ .dashboard-entry-bucket { display: block; container-type: normal; min-width: 0; width: auto; }
+ .dashboard-entry-card, .dashboard-entry-card:hover, .dashboard-entry-card.is-editing {
+  display: block; width: auto; min-width: 0; max-width: none; padding: 0; margin: 0 0 6pt;
+  border: 0; border-radius: 0; background: transparent; box-shadow: none; outline: none;
+  break-inside: auto; page-break-inside: auto;
+ }
+ .dashboard-entry-card:last-child { margin-bottom: 0; }
+ .dashboard-entry-card-name, .dashboard-entry-card-description { font-size: 9pt; color: #000; overflow-wrap: anywhere; }
+ .dashboard-entry-card-description { margin-top: 3pt; }
+ .dashboard-entry-card img { max-width: 100%; height: auto; }
+ .dashboard-entry-card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+ .dashboard-entry-card table { width: 100%; table-layout: fixed; }
+ .dashboard-entry-card-truncation { display: none; }
 }

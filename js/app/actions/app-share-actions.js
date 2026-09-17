@@ -318,7 +318,7 @@
 		}
 
 		/**
-		 * トップバーの「URLで開く」「共有」と共有ダイアログを結線する。
+		 * トップバーの「URLから開く」「共有」と共有ダイアログを結線する。
 		 */
 		function setupShareUi() {
 			const openUrlButton = document.getElementById("open-url");
@@ -341,7 +341,7 @@
 
 			if (openUrlButton) {
 				openUrlButton.addEventListener("click", () => {
-					const rawUrl = window.prompt("読み込むJSONのURLを入力してください。", currentSourceUrl);
+					const rawUrl = window.prompt("共有リンクを貼り付けてください。", currentSourceUrl);
 					if (rawUrl === null || rawUrl.trim() === "") {
 						return;
 					}

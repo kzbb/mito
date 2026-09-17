@@ -16,9 +16,11 @@ const { chromium } = require("playwright");
 
 		for (const size of [{ width: 1235, height: 694 }, { width: 1440, height: 900 }, { width: 900, height: 500 }]) {
 			await page.setViewportSize(size);
+			// Media-query change handlers run on the next rendering update.
+			await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 			for (const collapsed of [false, true, false]) {
 				const isCollapsed = await page.locator("#toggle-left-panel").getAttribute("aria-expanded") === "false";
-				if (isCollapsed !== collapsed) await page.click("#toggle-left-panel");
+				if (isCollapsed !== collapsed) await page.click(size.width < 1024 && collapsed ? "#close-left-panel" : "#toggle-left-panel");
 				const layout = await page.evaluate(() => {
 					window.scrollTo(0, 10000);
 					document.body.scrollTop = 10000;

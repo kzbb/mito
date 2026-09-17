@@ -60,6 +60,7 @@ function check(label, ok, detail) {
 	check("全モジュールがグローバル登録済み", globals.length === 0, globals.length ? `未登録: ${globals}` : "");
 
 	// --- 新規作成 ---
+	await page.click("#file-menu-toggle");
 	await page.click("#new-file");
 	await page.waitForTimeout(200);
 	check("新規作成でダッシュボードが出る", await page.locator(".main-window h2").count() > 0,
@@ -347,7 +348,7 @@ function check(label, ok, detail) {
 		await chips.nth(1).click();
 		await page.waitForTimeout(300);
 		const afterChip = await dirty();
-		check("フォーカス切替で未保存になる", afterChip.isDirty === true, JSON.stringify(afterChip));
+		check("表示切替では未保存にならない", afterChip.isDirty === false, JSON.stringify(afterChip));
 	} else {
 		check("フォーカスチップが2つ以上ある", false, `${chipCount}個`);
 	}

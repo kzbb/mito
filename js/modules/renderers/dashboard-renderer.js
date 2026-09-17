@@ -16,6 +16,8 @@
 	 * }} deps
 	 */
 	function createDashboardRenderer(deps) {
+		/** @type {WeakMap<object, { setting: string, categories: string[] }>} */
+		const viewFilters = new WeakMap();
 		/** @type {{ top: number, left: number }} */
 		let lastTableScrollPosition = { top: 0, left: 0 };
 		let dashboardBackgroundClickHandlerInstalled = false;
@@ -83,7 +85,7 @@
 			meta.className = "entry-meta";
 			const focusLabel = document.createElement("span");
 			focusLabel.className = "dashboard-focus-label";
-			focusLabel.textContent = "focus:";
+			focusLabel.textContent = "表示:";
 			meta.appendChild(focusLabel);
 
 			const focusChipList = document.createElement("div");
@@ -117,16 +119,7 @@
 						nextFocusCategories.add(category);
 					}
 
-					const applied = deps.mutateDocument((documentData) => {
-						if (!documentData.settings || typeof documentData.settings !== "object") {
-							documentData.settings = {};
-						}
-
-						documentData.settings.focusCategory = Array.from(nextFocusCategories).join(", ");
-					});
-					if (!applied) {
-						return;
-					}
+					viewFilters.set(currentData, { setting: resolveFocusCategorySetting(currentData), categories: Array.from(nextFocusCategories) });
 
 					renderDashboardOverview(mainElement, deps.getCurrentData());
 				});
@@ -318,7 +311,7 @@
 					return;
 				}
 
-				if (event.button !== 0) {
+				if (matchMedia("(max-width: 639px)").matches || event.button !== 0) {
 					return;
 				}
 
@@ -368,7 +361,7 @@
 			card.dataset.entryId = String(entry?.id ?? "");
 			card.tabIndex = 0;
 			card.setAttribute("role", "button");
-			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（クリックで編集）`);
+			card.setAttribute("aria-label", `${deps.resolveEntryName(entry)}（開く）`);
 
 			const cardColor = resolveEntryCardColor(entry);
 			if (cardColor) {
@@ -422,7 +415,7 @@
 			// mousedownをアクションのトリガーにすることで、この問題を回避する。
 			// event.preventDefault()でフォーカス移動を抑止し、clickでの二重発火を防ぐ。
 			card.addEventListener("mousedown", (event) => {
-				if (event.button !== 0) {
+				if (matchMedia("(max-width: 639px)").matches || event.button !== 0) {
 					return;
 				}
 				const target = /** @type {HTMLElement | null} */ (event.target instanceof HTMLElement ? event.target : null);
@@ -445,10 +438,20 @@
 				if (target?.closest("a")) {
 					return;
 				}
-				// mousedownで処理済みのため何もしない
+				if (matchMedia("(max-width: 639px)").matches) {
+					captureTableScrollPosition(/** @type {HTMLElement} */ (card.closest(".main-window")));
+					deps.onOpenEntryView(entry);
+				}
 			});
 
 			card.addEventListener("keydown", (event) => {
+				if (event.target !== card) return;
+				if ((event.key === "Enter" || event.key === " ") && matchMedia("(max-width: 639px)").matches) {
+					event.preventDefault();
+					captureTableScrollPosition(/** @type {HTMLElement} */ (card.closest(".main-window")));
+					deps.onOpenEntryView(entry);
+					return;
+				}
 				if (event.key !== "Enter" && event.key !== " ") {
 					return;
 				}
@@ -511,6 +514,8 @@
 		 */
 		function resolveFocusCategories(data, activeEntries) {
 			const raw = resolveFocusCategorySetting(data);
+			const filter = viewFilters.get(data);
+			if (filter && filter.setting === raw) return [...filter.categories];
 
 			const specified = raw
 				.split(/[,、]/)

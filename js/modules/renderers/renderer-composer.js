@@ -72,6 +72,7 @@
 
 		const entryDetailApi = typeof createEntryDetailRenderer === "function"
 			? createEntryDetailRenderer({
+				onEnterEditMode: deps.onEnterEditMode,
 				onMoveEntryToDeletedFromDetail: deps.onMoveEntryToDeletedFromDetail,
 				onSetFormStatus: deps.onSetFormStatus,
 				onSetTopbarSaveStatus: deps.onSetTopbarSaveStatus,
@@ -88,6 +89,12 @@
 
 		const settingsApi = typeof createSettingsRenderer === "function"
 			? createSettingsRenderer({
+                createPrintDashboard: () => {
+                    const view = document.createElement("div");
+                    renderDashboardOverview(view, deps.getCurrentData());
+                    return view;
+                },
+				onBackToDashboard: (mainElement) => renderDashboardOverview(mainElement, deps.getCurrentData()),
 				getCurrentData: deps.getCurrentData,
 				mutateDocument: deps.mutateDocument,
 				onPermanentlyDeleteDeletedEntry: deps.onPermanentlyDeleteDeletedEntry,
